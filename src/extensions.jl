@@ -24,12 +24,9 @@ LinearAlgebra.transpose(C::CholOrPiv{<:Real}) = C # since hermitian
 ################################################################################
 # is positive semi-definite
 function ispsd end
-ispsd(A::Number, tol) = A ≥ -tol
+ispsd(A::Number, tol::Real = 0.) = A ≥ -tol
 # TODO: replace with own pivoted cholesky
-function ispsd(A::AbstractMatrix, tol::Real = 0.)
-    λ = eigvals(A)
-    all(λ .≥ -tol)
-end
+ispsd(A::AbstractMatrix, tol::Real = 0.) = all(ispsd, eigvals(A))
 iscov(A::AbstractMatrix, tol::Real = 0.) = issymmetric(A) && ispsd(A, tol)
 
 ######################### Extending LinearAlgebra's dot #######################
