@@ -26,7 +26,7 @@ LinearAlgebra.transpose(C::CholOrPiv{<:Real}) = C # since hermitian
 function ispsd end
 ispsd(A::Number, tol::Real = 0.) = A ≥ -tol
 # TODO: replace with own pivoted cholesky
-ispsd(A::AbstractMatrix, tol::Real = 0.) = all(ispsd, eigvals(A))
+ispsd(A::AbstractMatrix, tol::Real = 0.) = all(A->ispsd(A, tol), eigvals(A))
 iscov(A::AbstractMatrix, tol::Real = 0.) = issymmetric(A) && ispsd(A, tol)
 
 ######################### Extending LinearAlgebra's dot #######################
