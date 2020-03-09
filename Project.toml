@@ -1,0 +1,13 @@
+name = "LinearAlgebraExtensions"
+uuid = "cb114d4a-f1bd-499c-ad9e-7f2ed74575b9"
+authors = ["sebastianament "]
+version = "0.1.0"
+
+[deps]
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+InfiniteArrays = "4858937d-0d70-526a-a4dd-2d5cb5dd786c"
+LazyArrays = "5078a376-72f3-5289-bfd5-ec5146d43c02"
+LazyInverse = "d0afe1cb-6484-4949-b9e9-61bc645ed6c7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
