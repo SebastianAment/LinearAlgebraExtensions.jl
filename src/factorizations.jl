@@ -157,10 +157,10 @@ function Base.:*(H::HadamardProduct, x::AbstractVector)
 end
 # TODO: check this
 inverse(H::HadamardProduct) = hadamard(inverse.(H.factors))
-isposdef(H::HadamardProduct) = all(isposdef, H.factors) # this fact makes product kernels p.s.d. (p. 478)
-issymmetric(H::HadamardProduct) = all(issymmetric, H.factors)
-ishermitian(H::HadamardProduct) = all(ishermitian, H.factors)
-issuccess(H::HadamardProduct) = all(issuccess, H.factors)
+LinearAlgebra.isposdef(H::HadamardProduct) = all(isposdef, H.factors) # this fact makes product kernels p.s.d. (p. 478)
+LinearAlgebra.issymmetric(H::HadamardProduct) = all(issymmetric, H.factors)
+LinearAlgebra.ishermitian(H::HadamardProduct) = all(ishermitian, H.factors)
+LinearAlgebra.issuccess(H::HadamardProduct) = all(issuccess, H.factors)
 # TODO: factorize
 
 # function LinearAlgebra.dot(x::AbstractVector, H::Hadamard, y::AbstractVector)
