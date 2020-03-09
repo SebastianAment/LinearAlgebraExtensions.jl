@@ -21,11 +21,17 @@ const CholOrPiv{T} = CholeskyOrPiv{T}
 LinearAlgebra.adjoint(C::CholOrPiv{<:Real}) = C # since hermitian
 LinearAlgebra.transpose(C::CholOrPiv{<:Real}) = C # since hermitian
 
+################################################################################
 # is positive semi-definite
 function ispsd end
 ispsd(A::Number) = A ≥ 0
 # TODO: replace with own pivoted cholesky
-ispsd(A::AbstractMatrix, tol::Real = 0.) = isposdef(A)
+function ispsd(A::AbstractMatrix, tol::Real = 0.)
+    λ = eigvals(A)
+    all(λ .≥ -tol)
+end
+iscov(A) = issymmetric(A) && ispsd(A)
+iscov(A::AbstractMatrix) = issymmetric(A) && ispsd(A)
 
 ######################### Extending LinearAlgebra's dot #######################
 # TODO: The first two definitions will be deprecated in Julia 1.4
