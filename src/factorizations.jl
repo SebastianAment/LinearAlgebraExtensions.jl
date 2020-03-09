@@ -81,7 +81,7 @@ function dot(X::AbstractVecOrMatOrFac, S::LowRank, Y::AbstractVecOrMatOrFac)
 end
 
 function *(X::AbstractMatOrFac, S::LowRank, Y::AbstractVecOrMatOrFac)
-    XU = X * S.U
+    XU = X'S.U
     VY = (ishermitian(S) && X ≡ Y') ? XU' : S.V * Y
     XU*VY # LowRank(XU, VY)
 end
