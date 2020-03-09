@@ -24,14 +24,13 @@ LinearAlgebra.transpose(C::CholOrPiv{<:Real}) = C # since hermitian
 ################################################################################
 # is positive semi-definite
 function ispsd end
-ispsd(A::Number) = A ≥ 0
+ispsd(A::Number, tol) = A ≥ -tol
 # TODO: replace with own pivoted cholesky
 function ispsd(A::AbstractMatrix, tol::Real = 0.)
     λ = eigvals(A)
     all(λ .≥ -tol)
 end
-iscov(A) = issymmetric(A) && ispsd(A)
-iscov(A::AbstractMatrix) = issymmetric(A) && ispsd(A)
+iscov(A::AbstractMatrix, tol::Real = 0.) = issymmetric(A) && ispsd(A, tol)
 
 ######################### Extending LinearAlgebra's dot #######################
 # TODO: The first two definitions will be deprecated in Julia 1.4
