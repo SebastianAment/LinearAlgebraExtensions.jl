@@ -30,7 +30,7 @@ grid(args::AbstractVector...) = LazyGrid(args)
 # TODO: is it worth using the LazyArrays package?
 # could be replaced by LazyVector(applied(-, x, y)), which is neat.
 # lazy difference between two vectors, has no memory footprint
-struct LazyDifference{T, U<:AbstractVecOrTup, V<:AbstractVecOrTup} <: AbstractVector{T} # U, V} <: AbstractVector{T} #
+struct LazyDifference{T, U, V} <: AbstractVector{T}
     x::U
     y::V
     function LazyDifference(x, y)
@@ -41,7 +41,7 @@ struct LazyDifference{T, U<:AbstractVecOrTup, V<:AbstractVecOrTup} <: AbstractVe
 end
 
 difference(x::Number, y::Number) = x-y # avoid laziness for scalars
-difference(x, y) = LazyDifference(x, y)
+difference(x, y) = length(x) == length(y) == 1 ? x[1]-y[1] : LazyDifference(x, y)
 
 size(d::LazyDifference) = (length(d.x),)
 getindex(d::LazyDifference, i::Integer) = d.x[i]-d.y[i]
