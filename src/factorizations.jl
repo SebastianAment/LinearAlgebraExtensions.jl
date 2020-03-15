@@ -47,7 +47,13 @@ struct LowRank{T, M<:AbstractMatOrFac, N<:AbstractMatOrFac} <: Factorization{T}
     end
 end
 
-LowRank(u::AbstractVector) = LowRank(reshape(u, :, 1), u')
+Base.:+(A::LowRank, B::LowRank) = LowRank(hcat(A.U, B.U), vcat(A.V, B.V))
+function Base.:+(A::LowRank, B::Adjoint{<:Number, <:LowRank})
+    LowRank(hcat(A.U, B.parent.V'), vcat(A.V, B.parent.U'))
+end
+
+Base.sum(L::LowRank) = sum(L.U) * sum(L.V)
+LowRank(u::AbstractVector, v::AbstractMatrix = u') = LowRank(reshape(u, :, 1), v)
 function LowRank(U::AbstractMatOrFac, tol::Real = eps(eltype(U)), info::Int = 0)
     LowRank(U, U', tol, info)
 end
