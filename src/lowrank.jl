@@ -38,6 +38,7 @@ Base.Matrix(S::LowRank) = S.U*S.V
 
 import LinearAlgebra: dot, *, \, /, adjoint
 # adjoint(S::LowRank) = Adjoint(S)
+# TODO move this to ==, instead of ===, compare speed in case pointers are equal
 LinearAlgebra.issymmetric(L::LowRank) = L.U ≡ transpose(L.V)
 LinearAlgebra.ishermitian(L::LowRank) = L.U ≡ L.V'
 Base.eltype(L::LowRank{T}) where T = T
@@ -57,9 +58,13 @@ Base.:*(L::LowRank, x::AbstractVector) = L.U*(L.V*x)
 Base.:*(x::AbstractVector, L::LowRank) = (x*L.U)*L.V
 Base.:*(L::LowRank, A::AbstractMatOrFac) = LowRank(L.U, L.V*A)
 Base.:*(A::AbstractMatOrFac, L::LowRank) = LowRank(A*L.U, L.V)
+
+Base.:*(Inv::Union{Inverse, PseudoInverse}, L::LowRank) = LowRank(Inv * L.U, L.V)
+Base.:*(L::LowRank, Inv::Union{Inverse, PseudoInverse}) = LowRank(L.U, L.V * Inv)
+
 function Base.:*(A::LowRank, B::LowRank)
     C = A.V * B.U
-    LowRank(A.U*C, B.V) # TODO: decide which side is more efficient
+    size(C, 1) ≥ size(C, 2) ? LowRank(A.U*C, B.V) : LowRank(A.U, C*B.V)
 end
 Base.:\(A::AbstractMatOrFac, L::LowRank) = LowRank(A \ L.U, L.V)
 Base.:/(L::LowRank, A::AbstractMatOrFac) = LowRank(L.U, L.V / A)

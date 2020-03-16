@@ -1,5 +1,4 @@
-using LinearAlgebra
-import LinearAlgebra: *, dot
+import LinearAlgebra: dot
 
 LinearAlgebra.sqrt(I::UniformScaling) = sqrt(I.λ)*I
 LinearAlgebra.diag(x::Number) = x
@@ -61,7 +60,7 @@ function dot(x::AbstractVecOrMat, A::Cholesky, y::AbstractVecOrMat)
     ifelse(x === y, sum(abs2, A.U * y), dot(x * A.L, A.U * y))
 end
 
-function *(x::AbstractVecOrMat, A::Cholesky, y::AbstractVecOrMat)
+function Base.:*(x::AbstractVecOrMat, A::Cholesky, y::AbstractVecOrMat)
     if x === y'
         Uy = A.U * y
         Uy'Uy
@@ -78,7 +77,7 @@ function dot(x::AbstractVecOrMat, A::CholeskyPivoted, y::AbstractVecOrMat)
     dot(Ux, Uy)
 end
 
-function *(x::AbstractVecOrMat, A::CholeskyPivoted, y::AbstractVecOrMat)
+function Base.:*(x::AbstractVecOrMat, A::CholeskyPivoted, y::AbstractVecOrMat)
     ip = invperm(A.p)
     U = ifelse(A.rank == size(A, 1), A.U, @view A.U[1:A.rank, :])
     Ux = U * (x[:, A.p])' # take care of rank

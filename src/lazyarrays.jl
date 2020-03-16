@@ -1,8 +1,6 @@
 using LinearAlgebra
-using LinearAlgebra: checksquare
 
-import Base: getindex, size
-import LinearAlgebra: \, /, *, inv, factorize, dot, det
+# import LinearAlgebra: \, /, *, inv, factorize, dot, det
 
 ##################### Lazy Multi-Dimensional Grid ##############################
 # useful to automatically detect Kronecker structure in Kernel matrices at compile time
@@ -43,8 +41,8 @@ end
 difference(x::Number, y::Number) = x-y # avoid laziness for scalars
 difference(x, y) = length(x) == length(y) == 1 ? x[1]-y[1] : LazyDifference(x, y)
 
-size(d::LazyDifference) = (length(d.x),)
-getindex(d::LazyDifference, i::Integer) = d.x[i]-d.y[i]
+Base.size(d::LazyDifference) = (length(d.x),)
+Base.getindex(d::LazyDifference, i::Integer) = d.x[i]-d.y[i]
 # getindex(d::LazyDifference, ::Colon) = d.x-d.y
 
 # getindex(d::LazyDifference, i::Int) = LazyDifference(x[i], y[i]) # recursive

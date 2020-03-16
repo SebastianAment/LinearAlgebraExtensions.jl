@@ -1,5 +1,3 @@
-using LinearAlgebra
-using LazyInverse: pseudoinverse, PseudoInverse
 
 ########################### Projection Matrix ##################################
 # stands for A*(AF\y) = A*inverse(A'A)*(A'y) = A*pseudoinverse(A)
@@ -62,7 +60,7 @@ function Base.:*(H::HadamardProduct, x::AbstractVector)
     diag(x)
 end
 # TODO: check this
-inverse(H::HadamardProduct) = hadamard(inverse.(H.factors))
+LazyInverse.inverse(H::HadamardProduct) = hadamard(inverse.(H.factors))
 LinearAlgebra.isposdef(H::HadamardProduct) = all(isposdef, H.factors) # this fact makes product kernels p.s.d. (p. 478)
 LinearAlgebra.issymmetric(H::HadamardProduct) = all(issymmetric, H.factors)
 LinearAlgebra.ishermitian(H::HadamardProduct) = all(ishermitian, H.factors)

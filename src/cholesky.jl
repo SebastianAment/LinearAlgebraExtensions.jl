@@ -9,7 +9,6 @@
 # (TODO) parallelize
 # TODO: finish making tol a keywork argument throughout
 # TODO: have special factorization for Toeplitz matrix
-using LinearAlgebra
 using LinearAlgebra: Cholesky, CholeskyPivoted
 import LinearAlgebra: cholesky, cholesky!, adjoint, dot
 
