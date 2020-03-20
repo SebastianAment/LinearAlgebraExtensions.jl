@@ -29,6 +29,8 @@ ispsd(A::AbstractMatrix, tol::Real = 0.) = all(A->ispsd(A, tol), eigvals(A))
 iscov(A::AbstractMatrix, tol::Real = 0.) = issymmetric(A) && ispsd(A, tol)
 
 ######################### Extending LinearAlgebra's dot #######################
+LinearAlgebra.dot(x, A::UniformScaling, y) = dot(x, y) * A.λ
+
 # TODO: The first two definitions will be deprecated in Julia 1.4
 function dot(x::AbstractVecOrMat, A::AbstractMatrix, y::AbstractVecOrMat)
     n = LinearAlgebra.checksquare(A)

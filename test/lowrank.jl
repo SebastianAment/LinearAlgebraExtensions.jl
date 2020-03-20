@@ -1,4 +1,4 @@
-module TestFactorizations
+module TestLowRank
 using Test
 using LinearAlgebra
 using LazyInverse: inverse
@@ -51,4 +51,4 @@ using LazyInverse: inverse
     @test Matrix(A*C) ≈ Matrix(A)*Matrix(C)
 end
 
-end # TestFactorizations
+end # TestLowRank

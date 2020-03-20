@@ -70,8 +70,12 @@ Base.:\(A::AbstractMatOrFac, L::LowRank) = LowRank(A \ L.U, L.V)
 Base.:/(L::LowRank, A::AbstractMatOrFac) = LowRank(L.U, L.V / A)
 # least squares solve
 # TODO: make possible for matrix
-Base.:\(L::LowRank, b::AbstractVector) = pinverse(L.V) * (pinverse(L.U) * b)
-Base.:/(b::AbstractVector, L::LowRank) = (b * pinverse(L.V, :R)) * pinverse(L.U, :R)
+# TODO: do we have to right multiply by V's pinverse?
+# function LazyInverse.pseudoinverse(L::LowRank, side::Union{Val{:L}, Val{:R}})
+#     LowRank(pinverse(L.V), pinverse(L.U))
+# end
+# Base.:\(L::LowRank, b::AbstractVector) = pinverse(L) * b #pinverse(L.V) * (pinverse(L.U) * b)
+# Base.:/(b::AbstractVector, L::LowRank) = b * pinverse(L) # pinverse(L.V, :R)) * pinverse(L.U, :R)
 
 # ternary operations
 # we could also write this with a lazy Matrix-Vector product
