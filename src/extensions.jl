@@ -19,7 +19,16 @@ const CholOrPiv{T} = CholeskyOrPiv{T}
 
 LinearAlgebra.adjoint(C::CholOrPiv{<:Real}) = C # since hermitian
 LinearAlgebra.transpose(C::CholOrPiv{<:Real}) = C # since hermitian
-
+# apparently this wasn't defined
+function LinearAlgebra.logabsdet(D::Diagonal)
+	p = zero(eltype(D))
+	s = one(eltype(D))
+	for (i, d) in enumerate(D.diag)
+		p += log(abs(d))
+		s *= sign(d)
+	end
+	return (p, s)
+end
 ################################################################################
 # is positive semi-definite
 function ispsd end
