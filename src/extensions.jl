@@ -14,11 +14,20 @@ const AbstractVecOrMatOrFac{T} = Union{AbstractVecOrMat{T}, Factorization{T}}
 LinearAlgebra.factorize(x::Union{Number, Factorization, UniformScaling}) = x
 LinearAlgebra.adjoint(F::Factorization) = Adjoint(F)
 
+############################### Cholesky #######################################
 const CholeskyOrPiv{T} = Union{Cholesky{T}, CholeskyPivoted{T}}
 const CholOrPiv{T} = CholeskyOrPiv{T}
 
 LinearAlgebra.adjoint(C::CholOrPiv{<:Real}) = C # since hermitian
 LinearAlgebra.transpose(C::CholOrPiv{<:Real}) = C # since hermitian
+LinearAlgebra.ishermitian(C::Union{Cholesky, CholeskyPivoted}) = true
+LinearAlgebra.issymmetric(C::Cholesky) = eltype(C) <: Real && ishermitian(C)
+
+############################## BunchKaufman ####################################
+LinearAlgebra.adjoint(A::BunchKaufman) = A
+LinearAlgebra.transpose(A::BunchKaufman) = A
+
+
 # apparently this wasn't defined
 function LinearAlgebra.logabsdet(D::Diagonal)
 	p = zero(eltype(D))
