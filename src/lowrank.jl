@@ -59,8 +59,11 @@ Base.:*(x::AbstractVector, L::LowRank) = (x*L.U)*L.V
 Base.:*(L::LowRank, A::AbstractMatOrFac) = LowRank(L.U, L.V*A)
 Base.:*(A::AbstractMatOrFac, L::LowRank) = LowRank(A*L.U, L.V)
 
-Base.:*(Inv::Union{Inverse, PseudoInverse}, L::LowRank) = LowRank(Inv * L.U, L.V)
-Base.:*(L::LowRank, Inv::Union{Inverse, PseudoInverse}) = LowRank(L.U, L.V * Inv)
+# interaction with Inverse
+Base.:*(Inv::Inverse, L::LowRank) = LowRank(Inv * L.U, L.V)
+Base.:*(L::LowRank, Inv::Inverse) = LowRank(L.U, L.V * Inv)
+Base.:*(Inv::PseudoInverse, L::LowRank) = LowRank(Inv * L.U, L.V)
+Base.:*(L::LowRank, Inv::PseudoInverse) = LowRank(L.U, L.V * Inv)
 
 function Base.:*(A::LowRank, B::LowRank)
     C = A.V * B.U
