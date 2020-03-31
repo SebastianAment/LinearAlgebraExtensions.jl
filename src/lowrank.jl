@@ -53,6 +53,16 @@ function LinearAlgebra.tr(L::LowRank)
     return t
 end
 
+# compute diagonal from low-rank factorization without extraneous operations
+function LinearAlgebra.diag(L::LowRank{T}) where {T<:Number}
+    n = checksquare(L)
+    d = zeros(T, n)
+    for i = 1:n
+        d[i] += @views dot(L.U[i,:], L.V[:,i])
+    end
+    d
+end
+
 # TODO: take care of multiplication with adjoints of LowRank!
 Base.:*(L::LowRank, x::AbstractVector) = L.U*(L.V*x)
 Base.:*(x::AbstractVector, L::LowRank) = (x*L.U)*L.V
@@ -94,6 +104,37 @@ function Base.:*(X::AbstractMatOrFac, S::LowRank, Y::AbstractVecOrMatOrFac)
     LowRank(XU, VY)
 end
 # Base.:/(L::LowRank, x::AbstractVector) = LowRank(L.U, L.V / A)
+################# algorithms to compute low rank approximation #################
+function lowrank end
+function als end # alternating least squares
+# low rank approximation via als
+function lowrank(::typeof(als), A::AbstractMatrix{T}, rank::Int; tol::Real = 1e-12,
+                maxiter::Int = 32) where {T}
+    U = rand(eltype(A), (size(A, 1), rank))
+    V = rand(eltype(A), rank, size(A, 2))
+    U, V, info = als!(U, V, A, tol, maxiter)
+    LowRank(U, V; tol = tol, info = info)
+end
+
+# uses pivoted cholesky to compute a low-rank approximation to A with tolerance tol
+function lowrank(::typeof(cholesky), A::AbstractMatrix, rank::Int = checksquare(A);
+                                                        tol::Real = 1e-12,
+                                                        check::Bool = true)
+    n = LinearAlgebra.checksquare(A)
+    max_rank = min(n, rank) # pivoted cholesky terminates after at most n steps
+    U = zeros(eltype(A), (rank, n))
+    piv, chol_rank, tol, info = cholesky!(U, A, Val(true), Val(false);
+                                                        tol = tol, check = check)
+    if chol_rank < rank # or we allow U to be larger in storage than the rank indicates
+        U = U[1:chol_rank, :] # could be a view
+    end
+    LowRank(U'; tol = tol, info = info)
+end
+
+function als(A::AbstractMatrix, rank::Int; tol = 1e-12, maxiter = 32)
+    n, m = size(A)
+    als!(randn(n, rank), randn(rank, m), A, tol, maxiter)
+end
 
 # alternating least squares for low rank decomposition
 function als!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix,
@@ -102,7 +143,7 @@ function als!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix,
     for i in 1:maxiter
         U .= A / V # in place, rdiv!, ldiv!, and qr!, lq!?
         V .= U \ A # need to project rows of V
-        if norm(A-U*V) < tol
+        if norm(A-U*V) < tol # should we take norm or maximum?
             info = 0
             break
         end
@@ -110,15 +151,6 @@ function als!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix,
     return U, V, info
 end
 als!(L::LowRank, A::AbstractMatrix, maxiter = 32) = als!(L.U, L.V, A, L.tol, maxiter)
-
-# low rank approximation via als
-function lowrank(A::AbstractMatrix{T}, rank::Int, tol::Real = 1e-12,
-                maxiter::Int = 32) where {T}
-    U = rand(eltype(A), (size(A, 1), rank))
-    V = rand(eltype(A), rank, size(A, 2))
-    U, V, info = als!(U, V, A, tol, maxiter)
-    LowRank(U, V, tol, info)
-end
 
 # projected alternating least squares
 function pals!(L::LowRank, A::AbstractMatrix, PU::Projection, PV::Projection,

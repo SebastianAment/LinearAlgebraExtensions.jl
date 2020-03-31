@@ -19,6 +19,7 @@ LinearAlgebra.AbstractMatrix(A::AbstractMatrix) = A
 const CholeskyOrPiv{T} = Union{Cholesky{T}, CholeskyPivoted{T}}
 const CholOrPiv{T} = CholeskyOrPiv{T}
 
+LinearAlgebra.issuccess(C::CholeskyPivoted) = C.info ≥ 0 # either complete or low rank within tolerance
 LinearAlgebra.adjoint(C::CholOrPiv{<:Real}) = C # since hermitian
 LinearAlgebra.transpose(C::CholOrPiv{<:Real}) = C # since hermitian
 LinearAlgebra.ishermitian(C::Union{Cholesky, CholeskyPivoted}) = true

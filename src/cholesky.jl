@@ -7,27 +7,14 @@
 # -> could add generic pivoted cholesky to LinearAlgebra -> make work for complex hermitian matrices
 # potentially problematic assumption: LinearAlgebra assumes that setindex! is implemented
 # (TODO) parallelize
-# TODO: finish making tol a keywork argument throughout
 # TODO: have special factorization for Toeplitz matrix
 using LinearAlgebra: Cholesky, CholeskyPivoted
 import LinearAlgebra: cholesky, cholesky!, adjoint, dot
 
-# TODO: to check for pointer equality, can get rid of energetic function
-# const CholOrPiv{T} = Union{Cholesky{T}, CholeskyPivoted{T}}
-# function dot(x::U, C::CholOrPiv, y::V) where {U<:AbstractVecOrMat{<:Real},
-#                                             V<:AbstractVecOrMat{<:Real}}
-#     if x === y
-#         Ux = (C.U * x)
-#         return dot(Ux, Ux)
-#     else
-#         (C.U * y)'(C.U * x)
-#     end
-#     # (C.U * y)'(C.U * x)
-# end
-
 ############################### Cholesky #######################################
 # non-pivoted cholesky, stores
-function cholesky(A::AbstractMatrix{T}, ::Val{false} = Val(false); check::Bool = true) where {T<:Real}
+function cholesky(A::AbstractMatrix{T}, pivoted::Val{false} = Val(false);
+                                            check::Bool = true) where {T<:Real}
     U = similar(A)
     info = cholesky!(U, A, Val(false); check = check)
     uplo = 'U'
@@ -36,11 +23,11 @@ end
 
 # also works if U = A (overwrites upper triangular part)
 function cholesky!(U::AbstractMatrix, A::AbstractMatrix{T},
-                                                ::Val{false} = Val(false);
-                                                check::Bool = true) where {T<:Real}
+                                            pivoted::Val{false} = Val(false);
+                                            check::Bool = true) where {T<:Real}
     n = LinearAlgebra.checksquare(A)
-    n_t = LinearAlgebra.checksquare(U)
-    @assert n == n_t # make sure the target matrix is of the same size
+    nu = LinearAlgebra.checksquare(U)
+    n == nu || error("target matrix does not have the same shape as input matrix")
 
     d = diag(A)
     info = 0
@@ -70,37 +57,27 @@ end
 
 ############################### Pivoted Cholesky ###############################
 # returns PivotedCholesky
-function cholesky(A::AbstractMatrix{T}, ::Val{true}; tol::Real = eps(T),
-                                            check::Bool = true) where {T<:Real}
+function cholesky(A::AbstractMatrix, pivoted::Val{true},
+                triangular::Val{true} = Val(true); tol::Real = eps(eltype(A)),
+                            check::Bool = true)
     n = LinearAlgebra.checksquare(A)
     U = zero(A)
-    piv, rank, ε, info = cholesky!(U, A, Val(true), Val(false), tol; check = check)
+    piv, rank, ε, info = cholesky!(U, A, Val(true), triangular;
+                                        tol = tol, check = check)
     uplo = 'U' # denotes that upper triangular part of A was used to calculate the factorization
     CholeskyPivoted{eltype(U),typeof(U)}(U, uplo, piv, rank, ε, info)
 end
 
-# returns LowRank
-function cholesky(A::AbstractMatrix, ::Val{true}; max_rank::Int,
-                                                tol::Real = eps(eltype(A)),
-                                                check::Bool = true)
-    n = LinearAlgebra.checksquare(A)
-    max_rank = min(n, max_rank) # pivoted cholesky terminates after at most n steps
-    U = zeros(eltype(A), (max_rank, n))
-    piv, rank, tol, info = cholesky!(U, A, Val(true), Val(true), tol; check = check)
-    if rank < max_rank # or we allow U to be larger in storage than the rank indicates
-        U = U[1:rank, :]
-    end
-    LowRank(rank, tol, info)
-end
-
 # returns pivots π, rank m, trace norm bound ε, info (0 if successful, -1 if not symmetric, p.s.d., 1 if low rank)
-function cholesky!(U::AbstractMatrix{T}, A::AbstractMatrix{T}, ::Val{true};
-                        v::V = Val(false), tol::Real = eps(T),
+# triangular controls if we want to return a triangular factorization with permutation matrices,
+# or a generic low rank matrix which alrady incorporates the permutations
+function cholesky!(U::AbstractMatrix{T}, A::AbstractMatrix{T}, pivoted::Val{true},
+                        triangular::V = Val(true); tol::Real = eps(T),
                         check::Bool = true) where {T<:Real, V<:Union{Val{false}, Val{true}}}
-    @assert size(U, 2) == size(A, 2) # outer dimension has to be equal to matrix dimension
+    size(U, 2) == size(A, 2) || error("input matrix U does not have the same outer dimension as A")
     max_iter = size(U, 1)
     U .= zero(T)
-    return _chol!(U, A, max_iter, v, tol, check)
+    return _chol!(U, A, max_iter, triangular, tol, check)
 end
 
 # returns U s.t. A = U[1:S.rank,:]'U[1:S.rank,:]
@@ -110,12 +87,12 @@ end
 # - merge the two _chol! methods
 # have to check and throw errors for: square, Hermitian, p.s.d
 function _chol!(U::M, A::C, max_iter::Int,
-                            ::Val{true}, tol::Real = eps(T),
+                            triangular::Val{false}, tol::Real = eps(T),
                             check::Bool = true) where {T<:Real, M<:Matrix{T},
                                                 C<:AbstractMatrix{T}}
     n = LinearAlgebra.checksquare(A)
-    @assert size(U, 1) ≥ max_iter
-    @assert size(U, 2) == n
+    size(U, 1) ≥ max_iter || error("input matrix U does not have more than maxiter columns")
+    size(U, 2) == n || error("input matrix U does not have the same outer dimension as A")
     d = diag(A)
     π = collect(1:n)
     ε = sum(abs, d)
@@ -177,13 +154,13 @@ end
 # returns U s.t. A[π,π] = U'U
 # TODO: reorder d according to pivots, allows for simd summation for error bound
 function _chol!(U::M, A::C, max_iter::Int,
-                                ::Val{false} = Val(false),
+                                triangular::Val{true} = Val(true),
                                 tol::Real = eps(T),
                                 check::Bool = true) where {T<:Real, M<:Matrix{T},
                                                         C<:AbstractMatrix{T}}
     n = LinearAlgebra.checksquare(A)
-    n_t = LinearAlgebra.checksquare(U)
-    @assert n == n_t # make sure the target matrix is of the same size
+    size(U, 2) ≥ max_iter || error("input matrix U does not have more than maxiter columns")
+    size(U, 1) == n || error("input matrix U does not have the same outer dimension as A")
 
     d = diag(A)
     π = collect(1:n)
@@ -249,9 +226,7 @@ function _chol!(U::M, A::C, max_iter::Int,
 end
 
 # computes diagonal of matrix from low rank cholesky factorization
-# not sure if this is good
-import LinearAlgebra: diag
-function diag(F::CholeskyPivoted{T}) where {T<:Number}
+function LinearAlgebra.diag(F::CholeskyPivoted{T}) where {T<:Number}
     n = size(F.L)[1]
     ip = invperm(F.p)
     U = @view F.U[1:F.rank, ip]

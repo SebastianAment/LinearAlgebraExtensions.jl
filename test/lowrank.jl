@@ -40,6 +40,9 @@ using LazyInverse: inverse
     @test tr(A) ≈ tr(MA)
     @test tr(B) ≈ tr(MB)
 
+    # diag
+    @test diag(A) ≈ diag(MA)
+
     # interaction with lazy inverse
     @test Matrix(inverse(R)*A) ≈ Matrix(R\A)
     @test Matrix(A*inverse(R)) ≈ Matrix(A/R)
@@ -49,6 +52,30 @@ using LazyInverse: inverse
     @test rank(C) == 2
     @test rank(A*C) == 1
     @test Matrix(A*C) ≈ Matrix(A)*Matrix(C)
+end
+
+@testset "low-rank algorithms" begin
+    using LinearAlgebraExtensions: lowrank, als
+    # low rank approximation algorithms
+    n = 61
+    m = 17
+    k = 8
+    U = randn(n, k) / sqrt(n*k) # random matrix with norm ≈ 1
+    V = randn(k, m) / sqrt(k*m)
+    L = LowRank(U, V)
+    A = Matrix(L)
+    tol = 1e-12
+    ALS = lowrank(als, A, k; tol = tol, maxiter = 32)
+    @test issuccess(ALS)
+    @test norm(Matrix(ALS)-A) < tol
+
+    L = LowRank(U)
+    A = Matrix(L)
+    
+    C = lowrank(cholesky, A, 2k; tol = tol) # allowing lee-way in rank determination
+    @test issuccess(C)
+    @test norm(Matrix(C)-A) < tol
+    @test rank(C) == k # check if it found the correct rank
 end
 
 end # TestLowRank
