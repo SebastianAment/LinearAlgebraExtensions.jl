@@ -9,16 +9,20 @@ using Test
     x = randn(n)
     y = randn(n)
     d = difference(x, y)
+    @test d isa LazyDifference
     @test d == x-y
 
-    x = randn(1)
+    x = randn()
     y = 1.
     d = difference(x, y)
     @test d isa Number
-    @test d[1] == x[1]-y
-    d = difference(y, x)
-    @test d isa Number
-    @test d[1] == y-x[1]
+    @test d == x-y
+
+    x, y = randn(1), randn(1)
+    d = difference(x, y)
+    @test d isa AbstractVector
+    @test d[1] == (x-y)[1]
+    @test length(d) == 1
 end
 
 @testset "Fourier" begin

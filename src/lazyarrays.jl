@@ -39,7 +39,10 @@ struct LazyDifference{T, U, V} <: AbstractVector{T}
 end
 
 difference(x::Number, y::Number) = x-y # avoid laziness for scalars
-difference(x, y) = length(x) == length(y) == 1 ? x[1]-y[1] : LazyDifference(x, y)
+difference(x::AbstractVector, y::AbstractVector) = LazyDifference(x, y)
+
+# this creates a type instability:
+# difference(x, y) = length(x) == length(y) == 1 ? x[1]-y[1] : LazyDifference(x, y)
 
 Base.size(d::LazyDifference) = (length(d.x),)
 Base.getindex(d::LazyDifference, i::Integer) = d.x[i]-d.y[i]
