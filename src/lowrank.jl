@@ -39,6 +39,9 @@ Base.Matrix(S::LowRank) = S.U*S.V
 import LinearAlgebra: dot, *, \, /, adjoint
 # adjoint(S::LowRank) = Adjoint(S)
 # TODO move this to ==, instead of ===, compare speed in case pointers are equal
+# WARNING this is actually not completely correct:
+# u*v' + v*u' is symmetric and low rank, but
+# not of the form that we are checking for here
 LinearAlgebra.issymmetric(L::LowRank) = L.U ≡ transpose(L.V)
 LinearAlgebra.ishermitian(L::LowRank) = L.U ≡ L.V'
 Base.eltype(L::LowRank{T}) where T = T
