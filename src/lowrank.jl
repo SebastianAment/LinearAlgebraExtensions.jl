@@ -5,11 +5,10 @@
 struct LowRank{T, M, N} <: Factorization{T}
     U::M
     V::N
-    # rank::Int # rank of the factorization
     tol::T # tolerance / error bound in trace norm
     info::Int # can hold error information about factorization
     function LowRank(U::AbstractVecOrMatOrFac, V::AbstractMatOrFac = U';
-                    tol = 1e2eps(eltype(U)), info::Int = 0)
+                    tol = 0., info::Int = 0)
         T = promote_type(eltype(U), eltype(V))
         rank = size(U, 2) == size(V, 1) ? size(U, 2) : throw(
             DimensionMismatch("U and V do not have compatible inner dimensions"))
