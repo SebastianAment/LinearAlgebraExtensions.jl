@@ -3,7 +3,7 @@ module TestCholesky
 using Test
 using LinearAlgebra
 using LinearAlgebraExtensions
-using LinearAlgebraExtensions: cholesky, cholesky!
+using LinearAlgebraExtensions: cholesky, cholesky!, LowRank
 
 struct KernelMatrix{T, K, X, Y} <: AbstractMatrix{T}
     k::K
@@ -26,6 +26,12 @@ Base.getindex(K::KernelMatrix, i, j) = K.k(x[i], y[j])
     @test issuccess(C)
     @test maximum(Matrix(C)-A) < tol
     @test rank(C) == k
+
+    # testing low rank approximation with non-triangular return factorization
+    L = cholesky(A, Val(true), Val(false), k; tol = tol)
+    @test L isa LowRank
+    @test L.U * L.V ≈ A
+
 end
 
 # TODO: more tests

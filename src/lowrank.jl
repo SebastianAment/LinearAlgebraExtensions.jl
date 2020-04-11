@@ -110,6 +110,7 @@ function Base.:*(X::AbstractMatOrFac, S::LowRank, Y::AbstractVecOrMatOrFac)
 end
 # Base.:/(L::LowRank, x::AbstractVector) = LowRank(L.U, L.V / A)
 ################# algorithms to compute low rank approximation #################
+# TODO: lowrank!(::LowRank, typeof(als)) ...
 function lowrank end
 function als end # alternating least squares
 # low rank approximation via als
@@ -122,18 +123,9 @@ function lowrank(::typeof(als), A::AbstractMatrix{T}, rank::Int; tol::Real = 1e-
 end
 
 # uses pivoted cholesky to compute a low-rank approximation to A with tolerance tol
-function lowrank(::typeof(cholesky), A::AbstractMatrix, rank::Int = checksquare(A);
-                                                        tol::Real = 1e-12,
-                                                        check::Bool = true)
-    n = LinearAlgebra.checksquare(A)
-    max_rank = min(n, rank) # pivoted cholesky terminates after at most n steps
-    U = zeros(eltype(A), (rank, n))
-    piv, chol_rank, tol, info = cholesky!(U, A, Val(true), Val(false);
-                                                        tol = tol, check = check)
-    if chol_rank < rank # or we allow U to be larger in storage than the rank indicates
-        U = U[1:chol_rank, :] # could be a view
-    end
-    LowRank(U'; tol = tol, info = info)
+function lowrank(::typeof(cholesky), A::AbstractMatrix,
+            rank::Int = checksquare(A); tol::Real = 1e-12, check::Bool = true)
+    cholesky(A, Val(true), Val(false), rank, tol = tol, check = check)
 end
 
 function als(A::AbstractMatrix, rank::Int; tol = 1e-12, maxiter = 32)

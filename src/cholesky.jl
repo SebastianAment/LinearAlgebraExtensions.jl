@@ -80,76 +80,6 @@ function cholesky!(U::AbstractMatrix{T}, A::AbstractMatrix{T}, pivoted::Val{true
     return _chol!(U, A, max_iter, triangular, tol, check)
 end
 
-# returns U s.t. A = U[1:S.rank,:]'U[1:S.rank,:]
-# TODO:
-# - parallelize using threads and/or tasks
-# - test permuting d, so that pivot search is contiguous in mermory,
-# - merge the two _chol! methods
-# have to check and throw errors for: square, Hermitian, p.s.d
-function _chol!(U::M, A::C, max_iter::Int,
-                            triangular::Val{false}, tol::Real = eps(T),
-                            check::Bool = true) where {T<:Real, M<:Matrix{T},
-                                                C<:AbstractMatrix{T}}
-    n = LinearAlgebra.checksquare(A)
-    size(U, 1) ≥ max_iter || error("input matrix U does not have more than maxiter columns")
-    size(U, 2) == n || error("input matrix U does not have the same outer dimension as A")
-    d = diag(A)
-    π = collect(1:n)
-    ε = sum(abs, d)
-    m = 1
-    info = 1 # assuming low-rank, unless algorithm terminates after n steps
-    @inbounds while true
-        # find pivot element
-        max_d = zero(T)
-        i = Int(m)
-        for k = m:n
-            if d[π[k]] > max_d
-                max_d = d[π[k]]
-                i = k
-            end
-        end
-
-        if d[π[i]] < T(0) # negative pivot
-            m -= 1
-            info = -1
-            break
-        end
-
-        π[i], π[m] = π[m], π[i]
-        U[m, π[m]] = sqrt(d[π[m]])
-
-        # Threads.@threads, @inbounds, might need to use Base.@propagate_inbounds
-        # can experiment with threads and tasks, spawn one for each j!
-        for j = m+1:n # this loop has zero memory allocation! parallelize?
-            dot_mj = zero(T) # dot product
-            @simd for k = 1:m-1
-                dot_mj += U[k, π[m]] * U[k, π[j]]
-            end
-            U[m, π[j]] = (A[π[m], π[j]] - dot_mj)  / U[m, π[m]]
-            d[π[j]] -= U[m, π[j]]^2
-        end
-
-        # calculate trace norm error
-        ε = zero(T)
-        for k = m+1:n
-            ε += abs(d[π[k]])
-        end
-
-        # termination criterion
-        if ε < tol || max_iter ≤ m
-            break
-        end
-        m += 1
-    end
-    if check && info < 0
-        throw(LinearAlgebra.PosDefException(m))
-    end
-    if m == n # full rank
-        info = 0
-    end
-    return π, m, ε, info
-end
-
 # pivoted cholesky which computes upper-triangular U
 # returns U s.t. A[π,π] = U'U
 # TODO: reorder d according to pivots, allows for simd summation for error bound
@@ -239,10 +169,95 @@ function LinearAlgebra.diag(F::CholeskyPivoted{T}) where {T<:Number}
     return d
 end
 
+##################### returning Separated Factorization ########################
+function cholesky(A::AbstractMatrix, pivoted::Val{true},
+                        triangular::Val{false}, rank = size(A, 1);
+                        tol::Real = 0., check::Bool = true)
+    n = LinearAlgebra.checksquare(A)
+    max_rank = min(n, rank) # pivoted cholesky terminates after at most n steps
+    U = zeros(eltype(A), (rank, n))
+    piv, chol_rank, tol, info = cholesky!(U, A, Val(true), Val(false);
+                                            tol = tol, check = check)
+    if chol_rank < rank # or we allow U to be larger in storage than the rank indicates
+        U = view(U, 1:chol_rank, :) # could be a view
+    end
+    LowRank(U'; tol = tol, info = info)
+end
+
+# returns U s.t. A = U[1:S.rank,:]'U[1:S.rank,:]
+# TODO:
+# - parallelize using threads and/or tasks
+# - test permuting d, so that pivot search is contiguous in mermory,
+# - merge the two _chol! methods
+# have to check and throw errors for: square, Hermitian, p.s.d
+function _chol!(U::M, A::C, max_iter::Int,
+                            triangular::Val{false}, tol::Real = eps(T),
+                            check::Bool = true) where {T<:Real, M<:Matrix{T},
+                                                C<:AbstractMatrix{T}}
+    n = LinearAlgebra.checksquare(A)
+    size(U, 1) ≥ max_iter || error("input matrix U does not have more than maxiter columns")
+    size(U, 2) == n || error("input matrix U does not have the same outer dimension as A")
+    d = diag(A)
+    π = collect(1:n)
+    ε = sum(abs, d)
+    m = 1
+    info = 1 # assuming low-rank, unless algorithm terminates after n steps
+    @inbounds while true
+        # find pivot element
+        max_d = zero(T)
+        i = Int(m)
+        for k = m:n
+            if d[π[k]] > max_d
+                max_d = d[π[k]]
+                i = k
+            end
+        end
+
+        if d[π[i]] < T(0) # negative pivot
+            m -= 1
+            info = -1
+            break
+        end
+
+        π[i], π[m] = π[m], π[i]
+        U[m, π[m]] = sqrt(d[π[m]])
+
+        # Threads.@threads, @inbounds, might need to use Base.@propagate_inbounds
+        # can experiment with threads and tasks, spawn one for each j!
+        for j = m+1:n # this loop has zero memory allocation! parallelize?
+            dot_mj = zero(T) # dot product
+            @simd for k = 1:m-1
+                dot_mj += U[k, π[m]] * U[k, π[j]]
+            end
+            U[m, π[j]] = (A[π[m], π[j]] - dot_mj)  / U[m, π[m]]
+            d[π[j]] -= U[m, π[j]]^2
+        end
+
+        # calculate trace norm error
+        ε = zero(T)
+        for k = m+1:n
+            ε += abs(d[π[k]])
+        end
+
+        # termination criterion
+        if ε < tol || max_iter ≤ m
+            break
+        end
+        m += 1
+    end
+    if check && info < 0
+        throw(LinearAlgebra.PosDefException(m))
+    end
+    if m == n # full rank
+        info = 0
+    end
+    return π, m, ε, info
+end
+
 
 ##################
 # Taken from ToeplitzMatrices,
-# TODO: need fast pivoted Bareiss algorithm for low-rank toeplitz matrices
+# TODO: fast pivoted Bareiss algorithm for low-rank toeplitz matrices
 # function cholesky!(L::AbstractMatrix{T}, S::SymmetricToeplitz{T}) where {T<:Number}
 #
 #     L[:, 1] .= T.vc ./ sqrt(T.vc[1])
