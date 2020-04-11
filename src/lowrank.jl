@@ -31,6 +31,9 @@ function LowRank(C::CholeskyPivoted{T}) where {T}
     LowRank(U', C.tol, C.info)
 end
 
+function Base.size(S::LowRank, k::Int)
+    k == 1 ? size(S.U, 1) : size(S.V, k)
+end
 Base.size(S::LowRank) = (size(S.U, 1), size(S.V, 2))
 LinearAlgebra.rank(S::LowRank) = size(S.U, 2)
 LinearAlgebra.issuccess(S::LowRank) = S.info ≥ 0

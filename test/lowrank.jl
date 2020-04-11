@@ -52,6 +52,18 @@ using LazyInverse: inverse
     @test rank(C) == 2
     @test rank(A*C) == 1
     @test Matrix(A*C) ≈ Matrix(A)*Matrix(C)
+
+    # size
+    n, k, m = 4, 2, 3
+    U, V = randn(n, k), randn(k, m)
+    A = LowRank(U, V)
+    MA = Matrix(A)
+    println(size(A) == size(MA))
+    @test size(A) == size(MA)
+    @test size(A, 1) == size(MA, 1)
+    @test size(A, 2) == size(MA, 2)
+    @test size(A, 3) == size(MA, 3)
+
 end
 
 @testset "low-rank algorithms" begin
@@ -71,7 +83,7 @@ end
 
     L = LowRank(U)
     A = Matrix(L)
-    
+
     C = lowrank(cholesky, A, 2k; tol = tol) # allowing lee-way in rank determination
     @test issuccess(C)
     @test norm(Matrix(C)-A) < tol
