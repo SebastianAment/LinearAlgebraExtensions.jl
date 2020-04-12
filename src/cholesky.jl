@@ -141,13 +141,19 @@ function _chol!(U::M, A::C, max_iter::Int,
         end
 
         # termination criterion
-        if ε < tol || max_iter ≤ m
+        if ε ≤ tol
+            break
+        elseif max_iter == m # this branch means ε > tol
+            info = -2
             break
         end
         m += 1
     end
-    if check && info < 0
+    if check && info == -1
         throw(LinearAlgebra.PosDefException(m))
+    elseif check && info == -2
+        throw("pivoted cholesky algorithm was not able to decrease the " *
+        "approximation error ε = $ε below tol = $tol with max_iter = $max_iter steps")
     end
     if m == n # full rank
         info = 0
@@ -212,7 +218,6 @@ function _chol!(U::M, A::C, max_iter::Int,
                 i = k
             end
         end
-
         if d[π[i]] < T(0) # negative pivot
             m -= 1
             info = -1
@@ -240,13 +245,19 @@ function _chol!(U::M, A::C, max_iter::Int,
         end
 
         # termination criterion
-        if ε < tol || max_iter ≤ m
+        if ε ≤ tol
+            break
+        elseif max_iter == m # this branch means ε > tol
+            info = -2
             break
         end
         m += 1
     end
-    if check && info < 0
+    if check && info == -1
         throw(LinearAlgebra.PosDefException(m))
+    elseif check && info == -2
+        throw("pivoted cholesky algorithm was not able to decrease the " *
+        "approximation error ε = $ε below tol = $tol with max_iter = $max_iter steps")
     end
     if m == n # full rank
         info = 0

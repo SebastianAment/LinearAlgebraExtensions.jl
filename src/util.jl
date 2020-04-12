@@ -1,7 +1,9 @@
+# TODO: could have type which lazily creates views,
+# and has access to the underlying matrix
 # converts a matrix to a vector, where each element is a
 # view into a column of the original matrix
 function vector²(A::AbstractMatrix)
-    [view(A, :, i) for i in 1:size(A, 2)] # one view allocates 64 bytes 
+    [view(A, :, i) for i in 1:size(A, 2)] # one view allocates 64 bytes
 end
 function matrix(v::AbstractVector{<:AbstractVector})
     n = length(v)
