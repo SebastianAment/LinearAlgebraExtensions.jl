@@ -12,6 +12,7 @@ struct LowRank{T, M, N} <: Factorization{T}
         T = promote_type(eltype(U), eltype(V))
         rank = size(U, 2) == size(V, 1) ? size(U, 2) : throw(
             DimensionMismatch("U and V do not have compatible inner dimensions"))
+        rank ≥ 1 || throw("rank = 0")
         new{T, typeof(U), typeof(V)}(U, V, tol, info)
     end
 end

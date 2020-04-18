@@ -16,3 +16,20 @@ function matrix(v::AbstractVector{<:AbstractVector})
     end
     return A
 end
+
+# struct DataVector{T, V, AT} <: AbstractVector{V}
+#     A::AT
+#     function DataVector(A::AbstractMatrix)
+#         T = eltype(A)
+#         V = typeof(@view(V.A[:,1]))
+#         new{T, V, AT}
+#     end
+# end
+# Base.length(V::DataVector) = size(V.A, 2)
+# function Base.getindex(V::DataVector, i::Integer, lazy::Val{true} = Val(true))
+#     return @view(V.A[:,i])
+# end
+# # function Base.getindex(V::DataVector, i::Integer, lazy::Val{false})
+# #     return V.A[:,i]
+# # end
+# Base.Matrix(V::DataVector) = V.A
