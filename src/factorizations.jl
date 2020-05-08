@@ -1,4 +1,3 @@
-
 ########################### Projection Matrix ##################################
 # stands for A*(AF\y) = A*inverse(A'A)*(A'y) = A*pseudoinverse(A)
 struct Projection{T, AT<:AbstractMatOrFac{T},
@@ -9,8 +8,14 @@ struct Projection{T, AT<:AbstractMatOrFac{T},
 end
 Projection(A::AbstractMatOrFac) = Projection(A, pseudoinverse(qr(A, Val(true)))) # defaults to pivoted qr
 
-# TODO: potentially do memory pre-allocation (including temporary)
 (P::Projection)(x::AbstractVecOrMatOrFac) = P.A * (P.A⁺ * x)
+
+# TODO: potentially do memory pre-allocation (including temporary)
+function LinearAlgebra.mul!(y::AbstractVecOrMat, P::Projection, x::AbstractVecOrMat,
+                                                                α = 1, β = 0)
+    A⁺x = P.A⁺ * x
+    mul!(y, P.A, A⁺x, α, β)
+end
 
 Base.size(P::Projection, k::Integer) = 0 < k ≤ 2 ? size(P.A, 1) : 1
 Base.size(P::Projection) = (size(P, 1), size(P, 2))

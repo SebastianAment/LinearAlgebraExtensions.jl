@@ -67,7 +67,7 @@ using LazyInverse: inverse
 end
 
 @testset "low-rank algorithms" begin
-    using LinearAlgebraExtensions: lowrank, als
+    using LinearAlgebraExtensions: lowrank, als, als!, pals!
     # low rank approximation algorithms
     n = 61
     m = 17
@@ -88,6 +88,37 @@ end
     @test issuccess(C)
     @test norm(Matrix(C)-A) < tol
     @test rank(C) == k # check if it found the correct rank
+
+    # projected least squares
+    using LinearAlgebraExtensions: Projection
+
+    n = 16
+    m = 16
+    k = 4
+    U = rand(n, k)
+    V = rand(k, m)
+    A = U*V
+
+    PU = Projection(U)
+    function pu!(x)
+        mul!(x, PU, x)
+    end
+    PV = Projection(V')
+    function pv!(x)
+        x = x'
+        mul!(x, PV, x)
+    end
+
+    @test PU(U) ≈ U
+    @test PV(V')' ≈ V
+    CV = copy(V)
+    pv!(CV)
+    @test V ≈ CV
+
+    L = LowRank(rand, n, k, m)
+    pals!(L, A, pu!)
+    @test A ≈ Matrix(L)
+
 end
 
 end # TestLowRank

@@ -17,12 +17,11 @@ struct LowRank{T, M, N} <: Factorization{T}
     end
 end
 const Separated = LowRank # aka separated factorization
-Base.:+(A::LowRank, B::LowRank) = LowRank(hcat(A.U, B.U), vcat(A.V, B.V))
-function Base.:+(A::LowRank, B::Adjoint{<:Number, <:LowRank})
-    LowRank(hcat(A.U, B.parent.V'), vcat(A.V, B.parent.U'))
+function LowRank(init, n::Int, k::Int, m::Int)
+    U = init(n, k)
+    V = init(k, m)
+    LowRank(U, V)
 end
-Base.:+(A::Adjoint{<:Number, <:LowRank}, B::LowRank) = B + A
-Base.sum(L::LowRank) = sum(L.U) * sum(L.V)
 
 # should only be used if C.rank < size(C, 1)
 function LowRank(C::CholeskyPivoted{T}) where {T}
@@ -30,6 +29,13 @@ function LowRank(C::CholeskyPivoted{T}) where {T}
     U = C.U[1:C.rank, ip]
     LowRank(U', C.tol, C.info)
 end
+
+Base.:+(A::LowRank, B::LowRank) = LowRank(hcat(A.U, B.U), vcat(A.V, B.V))
+function Base.:+(A::LowRank, B::Adjoint{<:Number, <:LowRank})
+    LowRank(hcat(A.U, B.parent.V'), vcat(A.V, B.parent.U'))
+end
+Base.:+(A::Adjoint{<:Number, <:LowRank}, B::LowRank) = B + A
+Base.sum(L::LowRank) = sum(L.U) * sum(L.V)
 
 function Base.size(S::LowRank, k::Int)
     k == 1 ? size(S.U, 1) : size(S.V, k)
@@ -115,8 +121,8 @@ end
 function lowrank end
 function als end # alternating least squares
 # low rank approximation via als
-function lowrank(::typeof(als), A::AbstractMatrix{T}, rank::Int; tol::Real = 1e-12,
-                maxiter::Int = 32) where {T}
+function lowrank(::typeof(als), A::AbstractMatrix{T}, rank::Int;
+                    tol::Real = 1e-12, maxiter::Int = 32) where {T}
     U = rand(eltype(A), (size(A, 1), rank))
     V = rand(eltype(A), rank, size(A, 2))
     U, V, info = als!(U, V, A, tol, maxiter)
@@ -124,8 +130,8 @@ function lowrank(::typeof(als), A::AbstractMatrix{T}, rank::Int; tol::Real = 1e-
 end
 
 # uses pivoted cholesky to compute a low-rank approximation to A with tolerance tol
-function lowrank(::typeof(cholesky), A::AbstractMatrix,
-            rank::Int = checksquare(A); tol::Real = 1e-12, check::Bool = true)
+function lowrank(::typeof(cholesky), A::AbstractMatrix, rank::Int = checksquare(A);
+                        tol::Real = 1e-12, check::Bool = true)
     cholesky(A, Val(true), Val(false), rank, tol = tol, check = check)
 end
 
@@ -137,25 +143,57 @@ end
 # alternating least squares for low rank decomposition
 function als!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix,
                 tol::Real = 1e-12, maxiter::Int = 32)
+    pals!(U, V, A, tol = tol, maxiter = maxiter)
+end
+
+function als!(L::LowRank, A::AbstractMatrix, maxiter = 32)
+    als!(L.U, L.V, A, L.tol, maxiter)
+end
+
+##################### projected alternating least squares ######################
+# updates U, V
+function pals!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix,
+                project_u! = identity, project_v! = identity;
+                maxiter::Int = 32, tol = eps(eltype(A)))
     info = -1
+    project_u!(U)
+    project_v!(V) # need to project rows of V
     for i in 1:maxiter
-        U .= A / V # in place, rdiv!, ldiv!, and qr!, lq!?
-        V .= U \ A # need to project rows of V
+        U .= A / V
+        project_u!(U)
+        V .= U \ A
+        project_v!(V) # need to project rows of V
         if norm(A-U*V) < tol # should we take norm or maximum?
             info = 0
             break
         end
     end
-    return U, V, info
+    U, V, info
 end
-als!(L::LowRank, A::AbstractMatrix, maxiter = 32) = als!(L.U, L.V, A, L.tol, maxiter)
 
-# projected alternating least squares
-function pals!(L::LowRank, A::AbstractMatrix, PU::Projection, PV::Projection,
-                maxiter::Int = 16)
-    for i in 1:maxiter
-        L.U .= PU(A/L.V) # in place?
-        L.V .= PV((L.U\A)')' # need to project rows of V
-    end
-    return L
+function pals(A::AbstractMatrix, k::Int,
+                project_u! = identity, project_v! = identity;
+                maxiter::Int = 32, tol = eps(eltype(A)))
+    n, m = size(A)
+    U = rand(n, k)
+    V = rand(k, m)
+    pals!(U, V, A, project_u!, project_v!, maxiter = maxiter, tol = tol)
 end
+
+function pals!(L::LowRank, A::AbstractMatrix,
+                project_u! = identity, project_v! = identity;
+                maxiter::Int = 32, tol = eps(eltype(A)))
+    pals!(L.U, L.V, A, project_u!, project_v!, maxiter = maxiter, tol = tol)
+end
+
+# positive!(x) = (@. x = max(x, 0))
+
+# PU = Projection(U)
+# PV = Projection(V')
+# function pu!(x)
+#     mul!(x, PU, x)
+# end
+# function pv!(x)
+#     x = x'
+#     mul!(x, PV, x)
+# end
