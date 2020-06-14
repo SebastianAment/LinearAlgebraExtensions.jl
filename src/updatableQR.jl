@@ -47,7 +47,7 @@ function add_column!(F::UpdatableQR, x::AbstractVector, k::Int = size(F, 2)+1)
             @inbounds F.R[i, j+1] = F.R[i, j]
         end
     end
-    mul!(@view(F.R[:, k]), F.Q', x) # Q * x
+    mul!(@view(F.R[:, k]), F.Q', x) # Q' * x
 
     # update
     F.m += 1; update_views!(F)
@@ -197,5 +197,5 @@ end
 
 function LinearAlgebra.ldiv!(y::AbstractVector, P::PUQR, x::AbstractVector)
     ldiv!(y, P.uqr, x)
-    permute!(y, invperm(P.perm))
+    invpermute!(y, P.perm)
 end
