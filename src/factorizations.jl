@@ -1,7 +1,7 @@
 ########################### Projection Matrix ##################################
 # stands for A*(AF\y) = A*inverse(A'A)*(A'y) = A*pseudoinverse(A)
 struct Projection{T, AT<:AbstractMatOrFac{T},
-                                AFT<:AbstractMatOrFac{T}} <: Factorization{T}
+                        AFT<:AbstractMatOrFac{T}} <: Factorization{T}
     A::AT
     A⁺::AFT
     # temp::V             V<:AbstractVecOrMat
@@ -21,7 +21,7 @@ Base.size(P::Projection, k::Integer) = 0 < k ≤ 2 ? size(P.A, 1) : 1
 Base.size(P::Projection) = (size(P, 1), size(P, 2))
 
 # properties
-LinearAlgebra.Matrix(P::Projection) = Matrix(P.A * P.A⁺)
+LinearAlgebra.Matrix(P::Projection) = Matrix(P.A) * Matrix(P.A⁺)
 LinearAlgebra.adjoint(P::Projection) = P
 Base.:^(P::Projection, n::Integer) = P
 function Base.literal_pow(::typeof(^), P::Projection, ::Val{N}) where N

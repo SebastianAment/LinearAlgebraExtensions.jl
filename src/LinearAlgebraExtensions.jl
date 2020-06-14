@@ -12,4 +12,6 @@ include("lowrank.jl")
 include("cholesky.jl")
 include("random.jl")
 
+include("updatableQR.jl")
+
 end

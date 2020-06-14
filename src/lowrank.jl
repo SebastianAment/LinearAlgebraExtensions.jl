@@ -152,6 +152,7 @@ end
 
 ##################### projected alternating least squares ######################
 # updates U, V
+# TODO: stopping criterion if U and V don't change much 
 function pals!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix,
                 project_u! = identity, project_v! = identity;
                 maxiter::Int = 32, tol = eps(eltype(A)))

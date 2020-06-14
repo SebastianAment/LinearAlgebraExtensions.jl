@@ -3,3 +3,4 @@ factorizations
 cholesky
 lazyarrays
 lowrank
+updatableQR
