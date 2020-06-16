@@ -29,7 +29,7 @@ using LinearAlgebra
 
     # with pre-allocation
     T = zeros(size(P.A, 2), k)
-    @time mul!(PX, P, X, T)
+    mul!(PX, P, X, T)
     @test PX ≈ P(PX)
 
     # linearity
