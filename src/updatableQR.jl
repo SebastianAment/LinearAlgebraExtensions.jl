@@ -151,9 +151,11 @@ end
 ################################################################################
 # APx = y where A = QR and P is permutation
 # avoids memory movement when adding columns at small indices
+# INFO: 2 sources of allocation: push! and invpermute!
 struct PermutedUpdatableQR{T, FT<:UQR{T}} <: Factorization{T}
     uqr::FT # factorization
     perm::Vector{Int} # permutation of input
+    # invperm::Vector{Int}
 end
 const PUQR = PermutedUpdatableQR
 function PermutedUpdatableQR(A::AbstractMatrix, perm = collect(1:size(A, 2)))
@@ -175,7 +177,7 @@ function add_column!(F::PUQR, x::AbstractVector, k::Int = size(F, 2)+1)
             F.perm[i] = p+1
         end
     end
-    push!(F.perm, k)
+    push!(F.perm, k) # could pre-allocate perm and adjust
     add_column!(F.uqr, x)
 end
 function remove_column!(F::PUQR, k::Int = size(F, 2))
@@ -197,5 +199,6 @@ end
 
 function LinearAlgebra.ldiv!(y::AbstractVector, P::PUQR, x::AbstractVector)
     ldiv!(y, P.uqr, x)
-    invpermute!(y, P.perm)
+    invpermute!(y, P.perm) # I believe this still allocates the invperm
+    #invpermute!!(y, P.perm) # this changes P.perm!
 end

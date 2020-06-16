@@ -17,7 +17,8 @@ using LinearAlgebra
     @test size(P) == (n, n)
 
     # projecting columns of matrix
-    X = randn(n, 2)
+    k = 2
+    X = randn(n, k)
     PX = P*X
     @test size(PX) == size(X)
     mul!(PX, P, X)
@@ -25,6 +26,11 @@ using LinearAlgebra
 
     MP = Matrix(P)
     @test MP^2 ≈ MP
+
+    # with pre-allocation
+    T = zeros(size(P.A, 2), k)
+    @time mul!(PX, P, X, T)
+    @test PX ≈ P(PX)
 
     # linearity
     # B = randn(n, m)

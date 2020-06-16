@@ -1,27 +1,41 @@
 ########################### Projection Matrix ##################################
 # stands for A*(AF\y) = A*inverse(A'A)*(A'y) = A*pseudoinverse(A)
 struct Projection{T, AT<:AbstractMatOrFac{T},
-                        AFT<:AbstractMatOrFac{T}} <: Factorization{T}
+                    QT<:AbstractMatOrFac{T}} <: Factorization{T}
     A::AT
-    A⁺::AFT
-    # temp::V             V<:AbstractVecOrMat
+    Q::QT
 end
-Projection(A::AbstractMatOrFac) = Projection(A, pseudoinverse(qr(A, Val(true)))) # defaults to pivoted qr
+function Projection(A::AbstractMatOrFac)
+    Q = Matrix(qr(A).Q)
+    Projection(A, Q)
+end
 
-(P::Projection)(x::AbstractVecOrMatOrFac) = P.A * (P.A⁺ * x)
+(P::Projection)(x::AbstractVecOrMatOrFac) = P.Q * (P.Q' * x)
 
-# TODO: potentially do memory pre-allocation (including temporary)
+# Qx is memory pre-allocation which can be passed optionally
 function LinearAlgebra.mul!(y::AbstractVecOrMat, P::Projection, x::AbstractVecOrMat,
-                                                                α = 1, β = 0)
-    A⁺x = P.A⁺ * x
-    mul!(y, P.A, A⁺x, α, β)
+                                Qx::AbstractVecOrMat, α::Real = 1, β::Real = 0)
+    _mul_helper!(y, P, x, Qx, α, β)
 end
+
+@inline function _mul_helper!(y, P::Projection, x, Qx, α = 1, β = 0)
+    mul!(Qx, P.Q', x)
+    mul!(y, P.Q, Qx, α, β)
+end
+
+function LinearAlgebra.mul!(y::AbstractVecOrMat, P::Projection, x::AbstractVecOrMat,
+                                                        α::Real = 1, β::Real = 0)
+    Qx = P.Q' * x
+    mul!(y, P.Q, Qx, α, β)
+end
+
 
 Base.size(P::Projection, k::Integer) = 0 < k ≤ 2 ? size(P.A, 1) : 1
 Base.size(P::Projection) = (size(P, 1), size(P, 2))
+Base.eltype(P::Projection{T}) where {T} = T
 
 # properties
-LinearAlgebra.Matrix(P::Projection) = Matrix(P.A) * Matrix(P.A⁺)
+LinearAlgebra.Matrix(P::Projection) = P.Q*P.Q'
 LinearAlgebra.adjoint(P::Projection) = P
 Base.:^(P::Projection, n::Integer) = P
 function Base.literal_pow(::typeof(^), P::Projection, ::Val{N}) where N
@@ -29,6 +43,13 @@ function Base.literal_pow(::typeof(^), P::Projection, ::Val{N}) where N
 end
 Base.:*(P::Projection, x::AbstractVecOrMat) = P(x)
 Base.:*(x::AbstractVecOrMat, P::Projection) = P(x')'
+
+############################# Orthogonal Matrix ################################
+# TODO:
+struct Orthogonal{T, M} <: AbstractMatrix{T}
+    parent::M
+end
+inv(A::Orthogonal) = A.parent'
 
 ############################## Hadamard Product ################################
 # TODO: tests and non-allocating versions
