@@ -1,13 +1,31 @@
 ########################### Projection Matrix ##################################
 # stands for A*(AF\y) = A*inverse(A'A)*(A'y) = A*pseudoinverse(A)
-struct Projection{T, AT<:AbstractMatOrFac{T},
-                    QT<:AbstractMatOrFac{T}} <: Factorization{T}
-    A::AT
-    Q::QT
+struct Projection{T, QT<:AbstractMatOrFac{T}} <: Factorization{T}
+    Q::QT # orthogonal matrix
+    function Projection(A::AbstractMatOrFac, tol::Real = eps(eltype(A));
+                                                    compute_projection = true)
+        if compute_projection
+            F = qr(A, Val(true)) # could use pivoted QR here
+            r = rank(F, tol)
+            Q = Matrix(F.Q)[:, 1:r] # could use pivoted QR here
+            new{eltype(Q), typeof(Q)}(Q)
+        else
+            A'A ≈ I(size(A, 2)) || throw("Input matrix A not orthogonal.
+                                Call function with compute_projection = true")
+            new{eltype(A), typeof(A)}(A)
+        end
+    end
 end
-function Projection(A::AbstractMatOrFac)
-    Q = Matrix(qr(A).Q)
-    Projection(A, Q)
+
+function LinearAlgebra.rank(F::QRPivoted, tol::Real = eps(eltype(F)))
+    ind = size(F.R, 2)
+    for (i, di) in enumerate(diagind(F.R))
+        if abs(F.R[di]) < tol
+            ind = i-1
+            break
+        end
+    end
+    return ind
 end
 
 (P::Projection)(x::AbstractVecOrMatOrFac) = P.Q * (P.Q' * x)
@@ -30,7 +48,7 @@ function LinearAlgebra.mul!(y::AbstractVecOrMat, P::Projection, x::AbstractVecOr
 end
 
 
-Base.size(P::Projection, k::Integer) = 0 < k ≤ 2 ? size(P.A, 1) : 1
+Base.size(P::Projection, k::Integer) = 0 < k ≤ 2 ? size(P.Q, 1) : 1
 Base.size(P::Projection) = (size(P, 1), size(P, 2))
 Base.eltype(P::Projection{T}) where {T} = T
 

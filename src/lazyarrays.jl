@@ -2,8 +2,8 @@ using LinearAlgebra
 
 # import LinearAlgebra: \, /, *, inv, factorize, dot, det
 
-##################### Lazy Multi-Dimensional Grid ##############################
-# useful to automatically detect Kronecker structure in Kernel matrices at compile time
+##################### Lazy multi-dimensional grid ##############################
+# useful to automatically detect Kronecker structure in Kernel matrices
 struct LazyGrid{T, V<:Tuple{Vararg{AbstractVector{T}}}} <: AbstractVector{AbstractVector{T}}
     args::V
 end
