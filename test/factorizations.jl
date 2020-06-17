@@ -1,11 +1,11 @@
 module TestFactorizations
 using Test
-using LinearAlgebraExtensions: Projection
+using LinearAlgebraExtensions: Projection, projection
 using LinearAlgebra
 @testset "projection" begin
     n, m = 16, 4
     A = randn(n, m)
-    P = Projection(A)
+    P = projection(A)
 
     x = randn(n)
     @test P isa Projection
@@ -36,12 +36,11 @@ using LinearAlgebra
     # test with rank-deficient A
     r = 2
     A = randn(n, r) * randn(r, m)
-    tol = 1e-10
-    P = Projection(A, tol)
+    P = projection(A, tol = 1e-10)
     @test size(P.Q, 2) == r
 
     # test special constructor
-    P2 = Projection(P.Q, compute_projection = false)
+    P2 = Projection(P.Q, check = true)
     @test P2.Q ≡ P.Q
 
     # this throws correclty

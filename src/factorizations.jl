@@ -2,19 +2,18 @@
 # stands for A*(AF\y) = A*inverse(A'A)*(A'y) = A*pseudoinverse(A)
 struct Projection{T, QT<:AbstractMatOrFac{T}} <: Factorization{T}
     Q::QT # orthogonal matrix
-    function Projection(A::AbstractMatOrFac, tol::Real = eps(eltype(A));
-                                                    compute_projection = true)
-        if compute_projection
-            F = qr(A, Val(true)) # could use pivoted QR here
-            r = rank(F, tol)
-            Q = Matrix(F.Q)[:, 1:r] # could use pivoted QR here
-            new{eltype(Q), typeof(Q)}(Q)
-        else
-            A'A ≈ I(size(A, 2)) || throw("Input matrix A not orthogonal.
-                                Call function with compute_projection = true")
-            new{eltype(A), typeof(A)}(A)
-        end
+    function Projection(Q::AbstractMatOrFac; check::Bool = true)
+        (check && Q'Q ≈ I(size(Q, 2))) || throw("Input matrix Q not orthogonal.
+                            Call function with compute_projection = true")
+        new{eltype(Q), typeof(Q)}(Q)
     end
+end
+
+function projection(A::AbstractMatrix; tol::Real = eps(eltype(A)))
+    F = qr(A, Val(true))
+    r = rank(F, tol)
+    Q = Matrix(F.Q)[:, 1:r]
+    Projection(Q)
 end
 
 function LinearAlgebra.rank(F::QRPivoted, tol::Real = eps(eltype(F)))
