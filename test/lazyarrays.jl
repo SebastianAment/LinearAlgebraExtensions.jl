@@ -43,9 +43,12 @@ end
     using LinearAlgebraExtensions: LazyGrid, grid
     n = 8
     x = randn(n)
-    g = grid(x, x, convert.(Float32, x))
+    y = 1:1.0:6
+    g = grid(x, x, y)
     @test g isa LazyGrid
     @test eltype(g) == Float64
-end
+    @test length(g) == length(x)^2 * length(y)
+    @test ndims(g) == 3
 
+end
 end # TestLazyArrays

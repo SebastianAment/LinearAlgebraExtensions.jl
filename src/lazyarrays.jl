@@ -11,6 +11,7 @@ Base.length(G::LazyGrid) = prod(length, G.args)
 Base.eltype(G::LazyGrid{T}) where {T} = T
 Base.size(G::LazyGrid) = (length(G),)
 Base.ndims(G::LazyGrid) = length(G.args) # mh, maybe don't do this?
+# TODO: nd indexing?
 function Base.getindex(G::LazyGrid{T}, i::Integer) where {T}
     @boundscheck checkbounds(G, i)
     val = zeros(T, ndims(G))
@@ -22,7 +23,7 @@ function Base.getindex(G::LazyGrid{T}, i::Integer) where {T}
     end
     return val
 end
-grid(args::Tuple{Vararg{AbstractVector}}) = LazyGrid(promote(args...))
+grid(args::Tuple{Vararg{AbstractVector}}) = LazyGrid(args)
 grid(args::AbstractVector...) = grid(args)
 
 ######################### Lazy Difference Vector ###############################
