@@ -2,7 +2,7 @@
 # and has access to the underlying matrix
 # converts a matrix to a vector, where each element is a
 # view into a column of the original matrix
-function vector²(A::AbstractMatrix)
+function vecofvec(A::AbstractMatrix)
     [view(A, :, i) for i in 1:size(A, 2)] # one view allocates 64 bytes
 end
 function matrix(v::AbstractVector{<:AbstractVector})
