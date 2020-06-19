@@ -39,4 +39,13 @@ end
     @test inv(F) isa Adjoint{<:Number, <:ℱ}
 end
 
+@testset "LazyGrid" begin
+    using LinearAlgebraExtensions: LazyGrid, grid
+    n = 8
+    x = randn(n)
+    g = grid(x, x, convert.(Float32, x))
+    @test g isa LazyGrid
+    @test eltype(g) == Float64
+end
+
 end # TestLazyArrays
