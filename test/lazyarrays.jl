@@ -46,9 +46,18 @@ end
     y = 1:1.0:6
     g = grid(x, x, y)
     @test g isa LazyGrid
-    @test eltype(g) == Float64
+    @test eltype(g) == Vector{Float64}
     @test length(g) == length(x)^2 * length(y)
     @test ndims(g) == 3
 
+    # combine arrays of different dimensionality
+    x = randn(n)
+    y = randn(2, n)
+    g = grid(x, y)
+    @test g isa LazyGrid
+    @test eltype(g) == Vector{Float64}
+    @test length(g) == length(x) * length(y)
+    @test ndims(g) == 3
+    @test g[1] == [x[1], y[:,1]...]
 end
 end # TestLazyArrays
