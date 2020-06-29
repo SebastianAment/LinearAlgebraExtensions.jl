@@ -122,10 +122,10 @@ function lowrank end
 function als end # alternating least squares
 # low rank approximation via als
 function lowrank(::typeof(als), A::AbstractMatrix{T}, rank::Int;
-                    tol::Real = 1e-12, maxiter::Int = 32) where {T}
+        tol::Real = 1e-12, maxiter::Int = 32, min_delta::Real = 1e-12) where {T}
     U = rand(eltype(A), (size(A, 1), rank))
     V = rand(eltype(A), rank, size(A, 2))
-    U, V, info = als!(U, V, A, tol, maxiter)
+    U, V, info = als!(U, V, A, maxiter = maxiter, tol = tol, min_delta = min_delta)
     LowRank(U, V; tol = tol, info = info)
 end
 
@@ -135,56 +135,93 @@ function lowrank(::typeof(cholesky), A::AbstractMatrix, rank::Int = checksquare(
     cholesky(A, Val(true), Val(false), rank, tol = tol, check = check)
 end
 
-function als(A::AbstractMatrix, rank::Int; tol = 1e-12, maxiter = 32)
+function als(A::AbstractMatrix, rank::Int; tol::Real = 1e-12,
+                                    maxiter::Int = 32, min_delta::Real = 1e-12)
     n, m = size(A)
-    als!(randn(n, rank), randn(rank, m), A, tol, maxiter)
+    als!(randn(n, rank), randn(rank, m), A, maxiter = maxiter, tol = tol, min_delta = min_delta)
 end
 
 # alternating least squares for low rank decomposition
-function als!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix,
-                tol::Real = 1e-12, maxiter::Int = 32)
-    pals!(U, V, A, tol = tol, maxiter = maxiter)
+function als!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix;
+                tol::Real = 1e-12, maxiter::Int = 32, min_delta = eps(eltype(A)))
+    pals!(U, V, A, tol = tol, maxiter = maxiter, min_delta = min_delta)
 end
 
-function als!(L::LowRank, A::AbstractMatrix, maxiter = 32)
-    als!(L.U, L.V, A, L.tol, maxiter)
+function als!(L::LowRank, A::AbstractMatrix; maxiter = 32)
+    als!(L.U, L.V, A, L.tol, maxiter = maxiter)
 end
 
 ##################### projected alternating least squares ######################
-# updates U, V
-# TODO: stopping criterion if U and V don't change much 
-function pals!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix,
-                project_u! = identity, project_v! = identity;
-                maxiter::Int = 32, tol = eps(eltype(A)))
+# all temporaries for als algorithm for reuse
+# add algorithm parameters to type?
+struct ALS{T, AT<:AbstractMatrix{T}}
+    A::AT
+    U::AT
+    V::AT
+    UV::AT
+    qrU::AT
+    qrVt::AT
+end
+function ALS(A, U, V)
+    ALS(A, U, V, U*V, copy(U) , copy(V'))
+end
+
+function pals!(P::ALS, project_u! = identity, project_v! = identity;
+                maxiter::Int = 32, tol = eps(eltype(A)), min_delta = eps(eltype(A)))
     info = -1
+    A, U, V, UV, qrU, qrVt = P.A, P.U, P.V, P.UV, P.qrU, P.qrVt
     project_u!(U)
     project_v!(V) # need to project rows of V
+
+    mul!(UV, U, V) # reconstruction
+    old_norm = Inf
+    delta = Inf
+    f(x, y) = (x-y)^2
+    resnorm(x, y) = sqrt(mapreduce(f, +, x, y))
     for i in 1:maxiter
-        U .= A / V
+
+        copy!(qrVt, V')
+        ldiv!(U', qr!(qrVt), A') # U .= A / V
         project_u!(U)
-        V .= U \ A
+
+        copy!(qrU, U)
+        ldiv!(V, qr!(qrU), A) # V .= U \ A
         project_v!(V) # need to project rows of V
-        if norm(A-U*V) < tol # should we take norm or maximum?
+
+        mul!(UV, U, V)
+        new_norm = resnorm(A, UV)
+        delta = old_norm - new_norm # > 0
+        if new_norm < tol || delta < min_delta
             info = 0
             break
         end
+        old_norm = new_norm
     end
     U, V, info
 end
 
-function pals(A::AbstractMatrix, k::Int,
+# updates U, V
+function pals!(U::AbstractMatrix, V::AbstractMatrix, A::AbstractMatrix,
                 project_u! = identity, project_v! = identity;
-                maxiter::Int = 32, tol = eps(eltype(A)))
+                maxiter::Int = 32, tol = eps(eltype(A)), min_delta = eps(eltype(A)))
+    P = ALS(A, U, V)
+    pals!(P, project_u!, project_v!, maxiter = maxiter, tol = tol, min_delta = min_delta)
+end
+
+# random initialization
+function pals(A::AbstractMatrix, k::Int, project_u! = identity, project_v! = identity;
+                maxiter::Int = 32, tol = eps(eltype(A)), min_delta = eps(eltype(A)))
     n, m = size(A)
     U = rand(n, k)
     V = rand(k, m)
-    pals!(U, V, A, project_u!, project_v!, maxiter = maxiter, tol = tol)
+    P = ALS(A, U, V)
+    pals!(P, project_u!, project_v!, maxiter = maxiter, tol = tol, min_delta = min_delta)
 end
 
 function pals!(L::LowRank, A::AbstractMatrix,
                 project_u! = identity, project_v! = identity;
-                maxiter::Int = 32, tol = eps(eltype(A)))
-    pals!(L.U, L.V, A, project_u!, project_v!, maxiter = maxiter, tol = tol)
+                maxiter::Int = 32, tol = eps(eltype(A)), min_delta = eps(eltype(A)))
+    pals!(L.U, L.V, A, project_u!, project_v!, maxiter = maxiter, tol = tol, min_delta = min_delta)
 end
 
 # positive!(x) = (@. x = max(x, 0))

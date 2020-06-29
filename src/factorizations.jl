@@ -3,8 +3,7 @@
 struct Projection{T, QT<:AbstractMatOrFac{T}} <: Factorization{T}
     Q::QT # orthogonal matrix
     function Projection(Q::AbstractMatOrFac; check::Bool = true)
-        (check && Q'Q ≈ I(size(Q, 2))) || throw("Input matrix Q not orthogonal.
-                            Call function with compute_projection = true")
+        (check && Q'Q ≈ I(size(Q, 2))) || throw("Input matrix Q not orthogonal. Call projection(Q) instead.")
         new{eltype(Q), typeof(Q)}(Q)
     end
 end

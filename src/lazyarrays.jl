@@ -37,7 +37,6 @@ LazyGrid{T}(args) where {T} = LazyGrid{T, typeof(args)}(args)A
 LazyGrid(args) = LazyGrid{Float64}(args)
 grid(args::Tuple) = LazyGrid(args)
 grid(args::AbstractArray...) = grid(args)
-
 ######################### Lazy Difference Vector ###############################
 # TODO: is it worth using the LazyArrays package?
 # could be replaced by LazyVector(applied(-, x, y)), which is neat.

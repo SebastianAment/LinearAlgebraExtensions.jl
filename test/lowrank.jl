@@ -4,7 +4,7 @@ using LinearAlgebra
 using LazyInverse: inverse
 
 @testset "LowRank" begin
-    using LinearAlgebraExtensions: LowRank
+    using LinearAlgebraExtensions: LowRank, projection
     n = 3
     u = randn(n)
     v = randn(n)
@@ -58,7 +58,6 @@ using LazyInverse: inverse
     U, V = randn(n, k), randn(k, m)
     A = LowRank(U, V)
     MA = Matrix(A)
-    println(size(A) == size(MA))
     @test size(A) == size(MA)
     @test size(A, 1) == size(MA, 1)
     @test size(A, 2) == size(MA, 2)
@@ -92,18 +91,18 @@ end
     # projected least squares
     using LinearAlgebraExtensions: Projection
 
-    n = 16
-    m = 16
+    n = 128
+    m = n
     k = 4
     U = rand(n, k)
     V = rand(k, m)
     A = U*V
 
-    PU = Projection(U)
+    PU = projection(U)
     function pu!(x)
         mul!(x, PU, x)
     end
-    PV = Projection(V')
+    PV = projection(V')
     function pv!(x)
         x = x'
         mul!(x, PV, x)
@@ -119,6 +118,14 @@ end
     pals!(L, A, pu!)
     @test A ≈ Matrix(L)
 
+    # early stopping test
+    A .+= .01randn(size(A))
+    L = LowRank(rand, n, k, m)
+    U, V, info = pals!(L, A, pu!, min_delta = 1e-2)
+    @test info == 0
+    L = LowRank(rand, n, k, m)
+    U, V, info = pals!(L, A, pu!, min_delta = -1) # not possible to do early stopping
+    @test info == -1
 end
 
 end # TestLowRank
