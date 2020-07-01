@@ -47,6 +47,7 @@ Base.Matrix(S::LowRank) = S.U*S.V
 
 import LinearAlgebra: dot, *, \, /, adjoint
 # adjoint(S::LowRank) = Adjoint(S)
+# adjoint(S::LowRank) = (S.U ≡ S.V') ? S : LowRank(S.V', S.U')
 # TODO move this to ==, instead of ===, compare speed in case pointers are equal
 # WARNING this is actually not completely correct:
 # u*v' + v*u' is symmetric and low rank, but

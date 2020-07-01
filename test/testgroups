@@ -4,3 +4,4 @@ cholesky
 lazyarrays
 lowrank
 updatableQR
+eigen

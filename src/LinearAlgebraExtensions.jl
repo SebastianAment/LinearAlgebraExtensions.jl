@@ -11,7 +11,7 @@ include("factorizations.jl")
 include("lowrank.jl")
 include("cholesky.jl")
 include("random.jl")
-
+include("eigen.jl")
 include("updatableQR.jl")
 
 end

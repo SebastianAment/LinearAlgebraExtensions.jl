@@ -65,7 +65,8 @@ Base.:*(x::AbstractVecOrMat, P::Projection) = P(x')'
 struct Orthogonal{T, M} <: AbstractMatrix{T}
     parent::M
 end
-inv(A::Orthogonal) = A.parent'
+Base.inv(A::Orthogonal) = A.parent'
+LazyInverse.inverse(A::Orthogonal) = A.parent'
 
 ############################## Hadamard Product ################################
 # TODO: tests and non-allocating versions
