@@ -43,12 +43,24 @@ end
     using LinearAlgebraExtensions: LazyGrid, grid
     n = 8
     x = randn(n)
-    y = 1:1.0:6
+    m = 6
+    y = range(1, m, length = m)
     g = grid(x, x, y)
     @test g isa LazyGrid
     @test eltype(g) == Vector{Float64}
     @test length(g) == length(x)^2 * length(y)
     @test ndims(g) == 3
+
+    # test correct indexing (equivalent to column major order)
+    @test g[2] ≈ [x[2], x[1], y[1]]
+    @test g[n+1] ≈ [x[1], x[2], y[1]]
+    @test g[2n+1] ≈ [x[1], x[3], y[1]]
+    @test g[n^2+1] ≈ [x[1], x[1], y[2]]
+
+    # test row major indexing
+    @test getindex(g, 2, Val(true)) ≈ [x[1], x[1], y[2]]
+    @test getindex(g, m+1, Val(true)) ≈ [x[1], x[2], y[1]]
+    @test getindex(g, n*m+1, Val(true)) ≈ [x[2], x[1], y[1]]
 
     # combine arrays of different dimensionality
     x = randn(n)

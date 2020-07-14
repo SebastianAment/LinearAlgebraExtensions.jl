@@ -94,7 +94,7 @@ function Base.:*(A::LowRank, B::LowRank)
 end
 Base.:\(A::AbstractMatOrFac, L::LowRank) = LowRank(A \ L.U, L.V)
 Base.:/(L::LowRank, A::AbstractMatOrFac) = LowRank(L.U, L.V / A)
-# least squares solve
+# least squares solve with low rank L \ y = x
 # TODO: make possible for matrix
 # TODO: do we have to right multiply by V's pinverse?
 # function LazyInverse.pseudoinverse(L::LowRank, side::Union{Val{:L}, Val{:R}})
