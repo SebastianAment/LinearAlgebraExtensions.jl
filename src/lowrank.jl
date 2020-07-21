@@ -24,10 +24,9 @@ function LowRank(init, n::Int, k::Int, m::Int)
 end
 
 # should only be used if C.rank < size(C, 1)
-function LowRank(C::CholeskyPivoted{T}) where {T}
-    ip = invperm(C.p)
-    U = C.U[1:C.rank, ip]
-    LowRank(U', C.tol, C.info)
+function LowRank(C::CholeskyPivoted)
+    U = @view C.U[1:C.rank, invperm(C.p)]
+    LowRank(U', U, tol = C.tol, info = C.info)
 end
 
 Base.:+(A::LowRank, B::LowRank) = LowRank(hcat(A.U, B.U), vcat(A.V, B.V))

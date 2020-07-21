@@ -88,6 +88,12 @@ end
     @test norm(Matrix(C)-A) < tol
     @test rank(C) == k # check if it found the correct rank
 
+    A = randn(2, 3)
+    A = A'A
+    C = cholesky(A, Val(true), check = false)
+    L = LowRank(C)
+    @test L isa LowRank
+
     # projected least squares
     using LinearAlgebraExtensions: Projection
 

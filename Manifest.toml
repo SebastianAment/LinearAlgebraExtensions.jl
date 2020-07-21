@@ -8,9 +8,9 @@ version = "0.5.0"
 
 [[ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra"]
-git-tree-sha1 = "a3254b3780a3544838ca0b7e23b1e9b06eb71bd8"
+git-tree-sha1 = "6f6e33efac70fc24c1f2a654a090b7af01690ffe"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "0.3.5"
+version = "0.3.7"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -93,9 +93,9 @@ uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
 
 [[Intervals]]
 deps = ["Dates", "Printf", "RecipesBase", "Serialization", "TimeZones"]
-git-tree-sha1 = "02119437336e9912faf63205b3db0305603bab70"
+git-tree-sha1 = "f8fd8065b6bccfbc2f9e7dd1fa5c0dde81d09185"
 uuid = "d8418881-c3e1-53bb-8760-2df7ec849ed5"
-version = "1.3.5"
+version = "1.4.1"
 
 [[IterTools]]
 git-tree-sha1 = "05110a2ab1fc5f932622ffea2a003221f4782c18"
@@ -104,9 +104,9 @@ version = "1.3.0"
 
 [[LazyArrays]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "MacroTools", "MatrixFactorizations", "StaticArrays"]
-git-tree-sha1 = "8e28ab1a89977586a42a3c48ecb9ffd69cb7ccf6"
+git-tree-sha1 = "b8ae23618bb217f8ec300dafac8422293abc1620"
 uuid = "5078a376-72f3-5289-bfd5-ec5146d43c02"
-version = "0.16.14"
+version = "0.16.15"
 
 [[LazyInverse]]
 deps = ["LinearAlgebra", "Test"]
@@ -154,9 +154,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[MatrixFactorizations]]
 deps = ["ArrayLayouts", "LinearAlgebra", "Random"]
-git-tree-sha1 = "69454f168628adeff74264837fc4c9d258dcc444"
+git-tree-sha1 = "9ebb16ae3c1cc772a3461741fc666c4a23e80bb1"
 uuid = "a3b82374-2e81-5b9e-98ce-41277c0e4c87"
-version = "0.4.1"
+version = "0.5.1"
 
 [[Missings]]
 deps = ["DataAPI"]
@@ -260,10 +260,10 @@ deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[TimeZones]]
-deps = ["Dates", "EzXML", "Mocking", "Printf", "RecipesBase", "Serialization", "Unicode"]
-git-tree-sha1 = "db7bc2051d4c2e5f336409224df81485c00de6cb"
+deps = ["Dates", "EzXML", "Mocking", "Pkg", "Printf", "RecipesBase", "Serialization", "Unicode"]
+git-tree-sha1 = "1038a97206e7696ba106f2c2dafa2e9cca393269"
 uuid = "f269a46b-ccf7-5d73-abea-4c690281aa53"
-version = "1.2.0"
+version = "1.3.1"
 
 [[UUIDs]]
 deps = ["Random", "SHA"]
