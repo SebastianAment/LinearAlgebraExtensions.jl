@@ -33,6 +33,10 @@ end
 LinearAlgebra.adjoint(A::BunchKaufman) = A
 LinearAlgebra.transpose(A::BunchKaufman) = A
 
+# LDL
+LinearAlgebra.ishermitian(A::LDLt) = true
+LinearAlgebra.issymmetric(A::LDLt) = eltype(A) <: Real && ishermitian(A)
+
 ################################################################################
 # is positive semi-definite
 function ispsd end
