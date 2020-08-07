@@ -1,6 +1,5 @@
 import LinearAlgebra: dot
 
-LinearAlgebra.sqrt(I::UniformScaling) = sqrt(I.λ)*I
 LinearAlgebra.diag(x::Number) = x
 
 const AbstractMatOrFac{T} = Union{AbstractMatrix{T}, Factorization{T}}
