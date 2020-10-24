@@ -40,7 +40,7 @@ using LinearAlgebraExtensions: UpdatableQR, UQR, remove_column!, add_column!, PU
     @test puqr \ b ≈ A \ b
 
     an = randn(n)
-    for k in 1:m
+    for k in 1:m # tests adding an removing column at arbitrary index
         # adding column
         add_column!(puqr, an, k)
         add_column!(uqr, an, k)

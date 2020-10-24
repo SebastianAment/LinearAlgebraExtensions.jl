@@ -182,6 +182,7 @@ function add_column!(F::PUQR, x::AbstractVector, k::Int = size(F, 2)+1)
 end
 function remove_column!(F::PUQR, k::Int = size(F, 2))
     i = findfirst(==(k), F.perm)
+    # TODO: check i for nothing
     deleteat!(F.perm, i)
     for (i, p) in enumerate(F.perm)
         if p ≥ k # decrementing indices above k
