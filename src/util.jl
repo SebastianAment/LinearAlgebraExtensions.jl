@@ -17,6 +17,10 @@ function matrix(v::AbstractVector{<:AbstractVector})
     return A
 end
 
+# potentially useful:
+diagview(A::AbstractMatrix) = @view A[diagind(A)]
+colnorms(A::AbstractMatrix) = [norm(a) for a in eachcol(A)]
+
 # struct DataVector{T, V, AT} <: AbstractVector{V}
 #     A::AT
 #     function DataVector(A::AbstractMatrix)

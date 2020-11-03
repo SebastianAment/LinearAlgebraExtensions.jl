@@ -5,18 +5,13 @@ using LinearAlgebra
 using LinearAlgebraExtensions
 using LinearAlgebraExtensions: cholesky, cholesky!, LowRank
 
-struct KernelMatrix{T, K, X, Y} <: AbstractMatrix{T}
+struct KernelMatrix{T, K, X<:AbstractVector{T}} <: AbstractMatrix{T}
     k::K
     x::X
-    y::Y
-    function KernelMatrix(k::K, x::X, y::Y) where {T, K, X<:AbstractVector{T}, Y<:AbstractVector{T}}
-        new{T, K, X, Y}
-    end
 end
-Base.size(K::KernelMatrix) = (length(x), length(y))
-Base.getindex(K::KernelMatrix, i, j) = K.k(x[i], y[j])
-
-# TODO: more tests
+Base.size(K::KernelMatrix) = (length(K.x), length(K.x))
+Base.getindex(K::KernelMatrix, i::Int, j::Int) = K.k(K.x[i], K.x[j])
+Base.getindex(K::KernelMatrix, i, j) = K.k.(K.x[i], K.x[j]')
 
 @testset "cholesky" begin
     tol = 1e-12
@@ -24,17 +19,10 @@ Base.getindex(K::KernelMatrix, i, j) = K.k(x[i], y[j])
     n = 32
     A = randn(k, n)
     A = A'A
-    C = cholesky(A, Val(true), Val(true); tol = tol, check = false)
+    C = cholesky(A, Val(true), n; tol = tol, check = false)
     @test issuccess(C)
     @test maximum(Matrix(C)-A) < tol
     @test rank(C) == k
-
-    # testing low rank approximation with non-triangular return factorization
-    L = cholesky(A, Val(true), Val(false); tol = tol)
-    @test L isa LowRank
-    @test rank(L) == k
-    @test L.U * L.V ≈ A
-
 
     # termination criterion test,
     # this matrix causes tremendous round-off error
@@ -46,17 +34,49 @@ Base.getindex(K::KernelMatrix, i, j) = K.k(x[i], y[j])
     # here, we just test, that if we can't approximate a matrix to
     # within tol, that an error is thrown
     v = false
-    try cholesky(A, Val(true), Val(false), 1; tol = 0.) catch; v = true end
+    try cholesky(A, Val(true), n; tol = 0.) catch; v = true end
     @test v
 
-    v = false
-    try cholesky(A, Val(true); tol = 0.) catch; v = true end
-    @test v
+    # testing with user-defined AbstractMatrix
+    k(x, y) = dot(x, y)
+    n = 16
+    x = randn(n)
+    K = KernelMatrix(k, x)
+    tol = 1e-8
+    C = cholesky(K, Val(true), tol = tol)
+    @test issuccess(C)
+    @test rank(C) == 1
+    @test isapprox(Matrix(C), K, atol = tol)
 
-    # however, if we increase our tolerance, everything works well
-    tol = 1e-6
-    L = cholesky(A, Val(true), Val(false); tol = tol)
-    @test isapprox(Matrix(L), A, atol = tol)
+    h(x) = exp(-x^2/2)
+    h(x, y) = h(norm(x-y))
+    n = 32
+    x = randn(n)
+    K = KernelMatrix(h, x)
+    C = cholesky(K, Val(true), tol = tol)
+    @test issuccess(C)
+    @test rank(C) < n
+    @test isapprox(Matrix(C), K, atol = tol)
 end
 
 end
+
+# code used for benchmarking
+# k(x) = exp(-x/2)
+# k(x, y) = k(norm(x-y))
+# n = 1024
+# x = 10randn(n)
+# K = KernelMatrix(k, x)
+# @time M = Symmetric(Matrix(K))
+# println("regular")
+# C = cholesky(M)
+# @time C = cholesky(M)
+# C = cholesky(K)
+# @time C = cholesky(K)
+# println("pivoted")
+# tol = 1e-12
+# C = cholesky(M, Val(true), tol = tol, check = false)
+# @time C = cholesky(M, Val(true), tol = tol, check = false)
+# C = cholesky(K, Val(true), tol = tol)
+# @time C = cholesky(K, Val(true), tol = tol)
+# println(rank(C))

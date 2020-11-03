@@ -1,9 +1,6 @@
 import LinearAlgebra: dot
 
 LinearAlgebra.diag(x::Number) = x
-# potentially useful:
-diagview(A::AbstractMatrix) = @view A[diagind(A)]
-colnorms(A::AbstractMatrix) = [norm(a) for a in eachcol(A)]
 
 const AbstractMatOrFac{T} = Union{AbstractMatrix{T}, Factorization{T}}
 const AbstractVecOrTup{T} = Union{AbstractVector{T}, NTuple{N, T} where N}

@@ -24,8 +24,11 @@ function LowRank(init, n::Int, k::Int, m::Int)
 end
 
 # should only be used if C.rank < size(C, 1)
-function LowRank(C::CholeskyPivoted)
+function LowRank(C::CholeskyPivoted, doview::Bool = false)
     U = @view C.U[1:C.rank, invperm(C.p)]
+    if !doview
+        U = copy(U)
+    end
     LowRank(U', U, tol = C.tol, info = C.info)
 end
 
@@ -130,9 +133,13 @@ function lowrank(::typeof(als), A::AbstractMatrix{T}, rank::Int;
 end
 
 # uses pivoted cholesky to compute a low-rank approximation to A with tolerance tol
-function lowrank(::typeof(cholesky), A::AbstractMatrix, rank::Int = checksquare(A);
+function lowrank(::typeof(cholesky), A::AbstractMatrix, max_rank::Int = checksquare(A);
                         tol::Real = 1e-12, check::Bool = true)
-    cholesky(A, Val(true), Val(false), rank, tol = tol, check = check)
+    C = cholesky(A, Val(true), max_rank, tol = tol, check = check)
+    if rank(C) < max_rank
+        U = C.factors[1:rank(C), invperm(C.p)]
+    end
+    return LowRank(U'; tol = tol, info = C.info)
 end
 
 function als(A::AbstractMatrix, rank::Int; tol::Real = 1e-12,
