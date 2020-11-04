@@ -13,8 +13,7 @@ import LinearAlgebra: cholesky, cholesky!, adjoint, dot
 # (I+U)'(I+U) = I + K + U' + U
 ############################### Cholesky #######################################
 # non-pivoted cholesky, stores
-function cholesky(A::AbstractMatrix{T}, pivoted::Val{false} = Val(false);
-                                            check::Bool = true) where {T<:Real}
+function cholesky(A::AbstractMatrix, pivoted::Val{false} = Val(false); check::Bool = true)
     U = zeros(eltype(A), size(A))
     info = cholesky!(U, A, Val(false); check = check)
     uplo = 'U'
@@ -22,9 +21,8 @@ function cholesky(A::AbstractMatrix{T}, pivoted::Val{false} = Val(false);
 end
 
 # also works if U = A (overwrites upper triangular part)
-function cholesky!(U::AbstractMatrix, A::AbstractMatrix{T},
-                                            pivoted::Val{false} = Val(false);
-                                            check::Bool = true) where {T<:Real}
+function cholesky!(U::AbstractMatrix, A::AbstractMatrix,
+                            pivoted::Val{false} = Val(false); check::Bool = true)
     n = LinearAlgebra.checksquare(A)
     nu = LinearAlgebra.checksquare(U)
     n == nu || error("target matrix does not have the same shape as input matrix")
@@ -40,7 +38,7 @@ function cholesky!(U::AbstractMatrix, A::AbstractMatrix{T},
         U[i, i] = sqrt(d[i])
 
         for j = i+1:n # this loop has zero memory allocation
-            dot_mj = zero(T) # dot product
+            dot_mj = zero(eltype(A)) # dot product
             @simd for k = 1:i-1
                 dot_mj += U[k, i] * U[k, j]
             end
@@ -54,7 +52,7 @@ end
 ############################### Pivoted Cholesky ###############################
 # returns PivotedCholesky
 function cholesky(A::AbstractMatrix, pivoted::Val{true}, rank::Int = size(A, 1);
-                    tol::Real = eps(eltype(A)), check::Bool = true)
+                                tol::Real = eps(eltype(A)), check::Bool = true)
     n = LinearAlgebra.checksquare(A)
     U = zeros(eltype(A), (rank, size(A, 2)))
     return cholesky!(U, A, Val(true), rank; tol = tol, check = check)
@@ -63,9 +61,8 @@ end
 # returns pivots piv, rank m, trace norm bound ε, info (0 if successful, -1 if not symmetric, p.s.d., 1 if low rank)
 # triangular controls if we want to return a triangular factorization with pivutation matrices,
 # or a generic low rank matrix which alrady incorporates the pivutations
-function cholesky!(U::AbstractMatrix{T}, A::AbstractMatrix{T}, pivoted::Val{true},
-                rank::Int = size(A, 1); tol::Real = eps(T),
-                check::Bool = true) where {T<:Real, V<:Union{Val{false}, Val{true}}}
+function cholesky!(U::AbstractMatrix, A::AbstractMatrix, pivoted::Val{true},
+                rank::Int = size(A, 1); tol::Real = eps(eltype(A)), check::Bool = true)
     size(U, 2) == size(A, 2) || error("input matrix U does not have the same outer dimension as A")
     rank = min(rank, size(U, 1)) # maximum rank can't exceed inner dimension of U
     U .= 0
@@ -75,8 +72,8 @@ end
 # pivoted cholesky which computes upper-triangular U
 # returns U s.t. A[piv,piv] = U'U
 # reordering d according to pivots, could allow for simd summation for error bound
-function _chol!(U::M, A::C, rank::Int, tol::Real = eps(T),
-                check::Bool = true) where {T<:Real, M<:Matrix{T}, C<:AbstractMatrix{T}}
+function _chol!(U::AbstractMatrix, A::AbstractMatrix, rank::Int,
+                                tol::Real = eps(eltype(A)), check::Bool = true)
     n = LinearAlgebra.checksquare(A)
     size(U, 1) ≥ rank || error("input matrix U does not have more than rank = $rank rows")
     size(U, 2) == n || error("input matrix U does not have the same outer dimension as A")
@@ -88,7 +85,7 @@ function _chol!(U::M, A::C, rank::Int, tol::Real = eps(T),
     info = 1
     @inbounds while true
         # find pivot element
-        max_d = zero(T)
+        max_d = zero(eltype(A))
         i = Int(m)
         for k in m:n
             if d[piv[k]] > max_d
@@ -97,7 +94,7 @@ function _chol!(U::M, A::C, rank::Int, tol::Real = eps(T),
             end
         end
         # i ≥ m
-        if d[piv[i]] < T(0) # negative pivot
+        if d[piv[i]] < 0 # negative pivot
             m -= 1
             info = -1
             break
@@ -111,7 +108,7 @@ function _chol!(U::M, A::C, rank::Int, tol::Real = eps(T),
         U[m, m] = sqrt(d[piv[m]])
 
         for j in m+1:n # this loop has zero memory allocation!
-            dot_mj = zero(T) # dot product
+            dot_mj = zero(eltype(A)) # dot product
             @simd for k in 1:m-1
                 dot_mj += U[k, m] * U[k, j]
             end
@@ -120,7 +117,7 @@ function _chol!(U::M, A::C, rank::Int, tol::Real = eps(T),
         end
 
         # calculate trace norm error
-        ε = zero(T)
+        ε = zero(eltype(A))
         for k in m+1:n
             ε += abs(d[piv[k]])
         end
@@ -148,11 +145,11 @@ function _chol!(U::M, A::C, rank::Int, tol::Real = eps(T),
 end
 
 # computes diagonal of matrix from low rank cholesky factorization
-function LinearAlgebra.diag(F::CholeskyPivoted{T}) where {T<:Number}
+function LinearAlgebra.diag(F::CholeskyPivoted)
     n = size(F.L)[1]
     ip = invpiv(F.p)
     U = @view F.U[1:F.rank, ip]
-    d = zeros(T, n)
+    d = zeros(eltype(F), n)
     for i = 1:n
         for j = 1:F.rank
             d[i] += U[j,i]^2

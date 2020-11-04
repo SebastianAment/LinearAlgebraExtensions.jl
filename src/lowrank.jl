@@ -50,12 +50,12 @@ Base.Matrix(S::LowRank) = S.U*S.V
 import LinearAlgebra: dot, *, \, /, adjoint
 # adjoint(S::LowRank) = Adjoint(S)
 # adjoint(S::LowRank) = (S.U ≡ S.V') ? S : LowRank(S.V', S.U')
-# TODO move this to ==, instead of ===, compare speed in case pointers are equal
-# WARNING this is actually not completely correct:
-# u*v' + v*u' is symmetric and low rank, but
-# not of the form that we are checking for here
-LinearAlgebra.issymmetric(L::LowRank) = L.U ≡ transpose(L.V)
-LinearAlgebra.ishermitian(L::LowRank) = L.U ≡ L.V'
+function LinearAlgebra.ishermitian(L::LowRank)
+    return (L.U ≡ L.V') || (L.U == L.V') || ishermitian(Matrix(L))
+end
+function LinearAlgebra.issymmetric(L::LowRank)
+    return eltype(L) <: Real ? ishermitian(L) : false
+end
 Base.eltype(L::LowRank{T}) where T = T
 function LinearAlgebra.tr(L::LowRank)
     n = checksquare(L)
@@ -69,13 +69,13 @@ function LinearAlgebra.tr(L::LowRank)
 end
 
 # compute diagonal from low-rank factorization without extraneous operations
-function LinearAlgebra.diag(L::LowRank{T}) where {T<:Number}
+function LinearAlgebra.diag(L::LowRank)
     n = checksquare(L)
-    d = zeros(T, n)
+    d = zeros(eltype(L), n)
     for i = 1:n
         d[i] += @views dot(L.U[i,:], L.V[:,i])
     end
-    d
+    return d
 end
 
 # TODO: take care of multiplication with adjoints of LowRank!
