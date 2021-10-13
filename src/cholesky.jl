@@ -13,7 +13,7 @@ import LinearAlgebra: cholesky, cholesky!, adjoint, dot
 # (I+U)'(I+U) = I + K + U' + U
 ############################### Cholesky #######################################
 # non-pivoted cholesky, stores
-function cholesky(A::AbstractMatrix, pivoted::Val{false} = Val(false); check::Bool = true)
+function cholesky(A::AbstractMatOrFac, pivoted::Val{false} = Val(false); check::Bool = true)
     U = zeros(eltype(A), size(A))
     info = cholesky!(U, A, Val(false); check = check)
     uplo = 'U'
@@ -21,7 +21,7 @@ function cholesky(A::AbstractMatrix, pivoted::Val{false} = Val(false); check::Bo
 end
 
 # also works if U = A (overwrites upper triangular part)
-function cholesky!(U::AbstractMatrix, A::AbstractMatrix,
+function cholesky!(U::AbstractMatrix, A::AbstractMatOrFac,
                             pivoted::Val{false} = Val(false); check::Bool = true)
     n = LinearAlgebra.checksquare(A)
     nu = LinearAlgebra.checksquare(U)
@@ -51,7 +51,7 @@ end
 
 ############################### Pivoted Cholesky ###############################
 # returns PivotedCholesky
-function cholesky(A::AbstractMatrix, pivoted::Val{true}, rank::Int = size(A, 1);
+function cholesky(A::AbstractMatOrFac, pivoted::Val{true}, rank::Int = size(A, 1);
                                 tol::Real = eps(eltype(A)), check::Bool = true)
     n = LinearAlgebra.checksquare(A)
     U = zeros(eltype(A), (rank, size(A, 2)))
@@ -61,7 +61,7 @@ end
 # returns pivots piv, rank m, trace norm bound ε, info (0 if successful, -1 if not symmetric, p.s.d., 1 if low rank)
 # triangular controls if we want to return a triangular factorization with pivutation matrices,
 # or a generic low rank matrix which alrady incorporates the pivutations
-function cholesky!(U::AbstractMatrix, A::AbstractMatrix, pivoted::Val{true},
+function cholesky!(U::AbstractMatrix, A::AbstractMatOrFac, pivoted::Val{true},
                 rank::Int = size(A, 1); tol::Real = eps(eltype(A)), check::Bool = true)
     size(U, 2) == size(A, 2) || error("input matrix U does not have the same outer dimension as A")
     rank = min(rank, size(U, 1)) # maximum rank can't exceed inner dimension of U
@@ -72,7 +72,7 @@ end
 # pivoted cholesky which computes upper-triangular U
 # returns U s.t. A[piv,piv] = U'U
 # reordering d according to pivots, could allow for simd summation for error bound
-function _chol!(U::AbstractMatrix, A::AbstractMatrix, rank::Int,
+function _chol!(U::AbstractMatrix, A::AbstractMatOrFac, rank::Int,
                                 tol::Real = eps(eltype(A)), check::Bool = true)
     n = LinearAlgebra.checksquare(A)
     size(U, 1) ≥ rank || error("input matrix U does not have more than rank = $rank rows")

@@ -21,8 +21,9 @@ const CholOrPiv{T} = CholeskyOrPiv{T}
 LinearAlgebra.issuccess(C::CholeskyPivoted) = C.info ≥ 0 # either complete or low rank within tolerance
 LinearAlgebra.adjoint(C::CholOrPiv{<:Real}) = C # since hermitian
 LinearAlgebra.transpose(C::CholOrPiv{<:Real}) = C # since hermitian
-LinearAlgebra.ishermitian(C::Union{Cholesky, CholeskyPivoted}) = true
+LinearAlgebra.ishermitian(C::Union{Cholesky, CholeskyPivoted}) = true # C.info > 0
 LinearAlgebra.issymmetric(C::Cholesky) = eltype(C) <: Real && ishermitian(C)
+LinearAlgebra.ishermitian(A::Factorization) = ishermitian(Matrix(A))
 
 function LinearAlgebra.logabsdet(C::Union{Cholesky, CholeskyPivoted})
     logdet(C), one(eltype(C))
