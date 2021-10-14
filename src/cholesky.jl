@@ -59,8 +59,8 @@ function cholesky(A::AbstractMatOrFac, pivoted::Val{true}, rank::Int = size(A, 1
 end
 
 # returns pivots piv, rank m, trace norm bound ε, info (0 if successful, -1 if not symmetric, p.s.d., 1 if low rank)
-# triangular controls if we want to return a triangular factorization with pivutation matrices,
-# or a generic low rank matrix which alrady incorporates the pivutations
+# triangular controls if we want to return a triangular factorization with permutation matrices,
+# or a generic low rank matrix which alrady incorporates the permutations
 function cholesky!(U::AbstractMatrix, A::AbstractMatOrFac, pivoted::Val{true},
                 rank::Int = size(U, 1); tol::Real = eps(eltype(A)), check::Bool = true)
     size(U, 2) == size(A, 2) || error("input matrix U does not have the same outer dimension as A")

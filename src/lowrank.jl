@@ -135,7 +135,15 @@ end
 # uses pivoted cholesky to compute a low-rank approximation to A with tolerance tol
 function lowrank(::typeof(cholesky), A::AbstractMatrix, max_rank::Int = checksquare(A);
                         tol::Real = 1e-12, check::Bool = true)
-    C = cholesky(A, Val(true), max_rank, tol = tol, check = check)
+    n = LinearAlgebra.checksquare(A)
+    U = zeros(eltype(A), (max_rank, n))
+    return lowrank!(U, cholesky, A)
+end
+
+# TODO: test
+function lowrank!(U::AbstractMatrix, ::typeof(cholesky), A::AbstractMatrix, max_rank::Int = size(U, 1);
+                        tol::Real = 1e-12, check::Bool = true)
+    C = cholesky!(U, A, Val(true), max_rank, tol = tol, check = check)
     if rank(C) < max_rank
         U = C.factors[1:rank(C), invperm(C.p)]
     end
