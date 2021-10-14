@@ -62,7 +62,7 @@ end
 # triangular controls if we want to return a triangular factorization with pivutation matrices,
 # or a generic low rank matrix which alrady incorporates the pivutations
 function cholesky!(U::AbstractMatrix, A::AbstractMatOrFac, pivoted::Val{true},
-                rank::Int = size(A, 1); tol::Real = eps(eltype(A)), check::Bool = true)
+                rank::Int = size(U, 1); tol::Real = eps(eltype(A)), check::Bool = true)
     size(U, 2) == size(A, 2) || error("input matrix U does not have the same outer dimension as A")
     rank = min(rank, size(U, 1)) # maximum rank can't exceed inner dimension of U
     U .= 0
@@ -135,7 +135,7 @@ function _chol!(U::AbstractMatrix, A::AbstractMatOrFac, rank::Int,
         throw(LinearAlgebra.PosDefException(m))
     elseif check && info == -2
         throw("pivoted cholesky algorithm was not able to decrease the " *
-        "approximation error ε = $ε below tol = $tol with max_iter = $max_iter steps")
+        "approximation error ε = $ε below tol = $tol with rank = $rank steps")
     end
     if m == n # full rank
         info = 0
