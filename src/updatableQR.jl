@@ -20,15 +20,12 @@ mutable struct UpdatableQR{T} <: Factorization{T}
     function UpdatableQR(A::AbstractMatrix{T}) where {T}
         n, m = size(A)
         m <= n || error("m = $m > $n = n")
-
         F = qr(A)
         Q = F.Q*Matrix(I, n, n)
         R = zeros(T, n, n)
-        R[1:m, 1:m] .= F.R
-
-        new{T}(Q, R, n, m,
-            view(Q, :, 1:m), view(Q, :, m+1:n),
-            UpperTriangular(view(R, 1:m, 1:m)))
+        @. R[1:m, 1:m] = F.R
+        Q1, Q2, R1 = @views Q[:, 1:m], Q[:, m+1:n], UpperTriangular(R[1:m, 1:m])
+        new{T}(Q, R, n, m, Q1, Q2, R1)
     end
 end
 const UQR = UpdatableQR
@@ -38,7 +35,7 @@ const UQR = UpdatableQR
 # R upper-triangular, and adjust Q accordingly
 function add_column!(F::UpdatableQR, x::AbstractVector, k::Int = size(F, 2)+1)
     n, m = size(F)
-    n > m || throw("cannot add column to factorization of size $(size(F))")
+    n > m || throw("cannot add column to factorization with maximum rank $n")
     k ≤ m + 1 || throw("cannot add at column index $k to factorization of size $(size(F))")
 
     # inserting new column into R
@@ -54,7 +51,7 @@ function add_column!(F::UpdatableQR, x::AbstractVector, k::Int = size(F, 2)+1)
     n, m = size(F)
 
     # zero out the "spike"
-    R2 = @view F.R[k:n, k:m] # if we don't restrict, we loose performance
+    R2 = @view F.R[k:n, k:m] # if we don't restrict, we lose performance
     Q2 = @view F.Q[:, k:end]
     for i in n-(k-1):-1:2
         G, r = givens(R2[i-1, 1], R2[i, 1], i-1, i)
@@ -66,9 +63,7 @@ end
 
 function remove_column!(F::UpdatableQR, k::Int = size(F, 2))
     1 <= k <= F.m || throw("index $k not in range [1, $(F.m)]")
-    Q12 = view(F.Q, :, k:F.m)
-    R12 = view(F.R, k:F.m, k+1:F.m)
-
+    Q12, R12 = @views F.Q[:, k:F.m], F.R[k:F.m, k+1:F.m]
     for i in 1:size(R12, 1)-1
         G, r = givens(R12[i, i], R12[i + 1, i], i, i+1)
         lmul!(G, R12)
@@ -85,16 +80,20 @@ function remove_column!(F::UpdatableQR, k::Int = size(F, 2))
 end
 
 function update_views!(F::UpdatableQR)
-    F.R1 = UpperTriangular(view(F.R, 1:F.m, 1:F.m))
-    F.Q1 = view(F.Q, :, 1:F.m)
-    F.Q2 = view(F.Q, :, F.m+1:F.n)
+    # F.R1 = UpperTriangular(view(F.R, 1:F.m, 1:F.m))
+    # F.Q1 = view(F.Q, :, 1:F.m)
+    # F.Q2 = view(F.Q, :, F.m+1:F.n)
+    n, m = size(F)
+    F.Q1, F.Q2 = @views F.Q[:, 1:m], F.Q[:, m+1:end]
+    F.R1 = @views UpperTriangular(F.R[1:m, 1:m])
 end
 
 ######################
 Base.Matrix(F::UpdatableQR) = F.Q1*F.R1
 Base.AbstractMatrix(F::UpdatableQR) = Matrix(F)
 function Base.:\(F::UpdatableQR, X::AbstractVecOrMat)
-    F.R1 \ (F.Q1'X)
+    Y = F.Q1' * X
+    ldiv!(F.R1, Y)
 end
 ####### ldiv!
 function LinearAlgebra.ldiv!(Y::AbstractVector, F::UpdatableQR, X::AbstractVector)
@@ -135,7 +134,9 @@ function Base.size(F::UpdatableQR, i::Int)
 end
 
 function Base.copy(src::UpdatableQR)
-    dst = UpdatableQR(reshape(view(src.Q, :, 1), :, 1))
+    q = @view(src.Q[:, 1])
+    q = reshape(q, :, 1)
+    dst = UpdatableQR(q)
     copy!(dst, src)
 end
 
@@ -161,7 +162,9 @@ const PUQR = PermutedUpdatableQR
 function PermutedUpdatableQR(A::AbstractMatrix, perm = collect(1:size(A, 2)))
     PermutedUpdatableQR(UQR(A), perm)
 end
-PermutedUpdatableQR(A::UQR) = PermutedUpdatableQR(A, collect(1:size(A, 2)))
+function PermutedUpdatableQR(A::UQR, perm = collect(1:size(A, 2)))
+    PermutedUpdatableQR(A, perm)
+end
 
 Base.eltype(F::PUQR{T}) where {T} = T
 Base.size(F::PUQR) = size(F.uqr)

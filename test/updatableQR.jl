@@ -54,6 +54,17 @@ using LinearAlgebraExtensions: UpdatableQR, UQR, remove_column!, add_column!, PU
         remove_column!(uqr, k)
         @test Matrix(puqr) ≈ A
     end
+
+    # IDEA: testing rank-restricted UpdatableQR
+    # r = m + 1 # allowing one more column than A already has
+    # uqr = UQR(A, r)
+    # add_column!(uqr, an, m+1)
+    # display([A an] - Matrix(uqr))
+    # display([A an])
+    # display(Matrix(uqr))
+    # @test [A an] ≈ Matrix(uqr)
+    # add_column!(uqr, an, m+1) # this should throw an error
+    # @test
 end
 
 
